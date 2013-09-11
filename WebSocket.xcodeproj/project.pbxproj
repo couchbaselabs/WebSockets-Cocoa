@@ -7,11 +7,11 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		275930CA17E037F70078880F /* GCDAsyncSocket.m in Sources */ = {isa = PBXBuildFile; fileRef = 275930C917E037F70078880F /* GCDAsyncSocket.m */; };
 		27A20E2617DF8DAB00F83C71 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27A20E2517DF8DAB00F83C71 /* Foundation.framework */; };
 		27A20E2917DF8DAB00F83C71 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 27A20E2817DF8DAB00F83C71 /* main.m */; };
 		27A20E3A17DF8E0700F83C71 /* WebSocket.m in Sources */ = {isa = PBXBuildFile; fileRef = 27A20E3717DF8E0700F83C71 /* WebSocket.m */; };
 		27A20E3B17DF8E0700F83C71 /* WebSocketClient.m in Sources */ = {isa = PBXBuildFile; fileRef = 27A20E3917DF8E0700F83C71 /* WebSocketClient.m */; };
-		27A20E5317DFC66800F83C71 /* GCDAsyncSocket.m in Sources */ = {isa = PBXBuildFile; fileRef = 27A20E4B17DFC66800F83C71 /* GCDAsyncSocket.m */; };
 		27A20E5417DFC66800F83C71 /* DDData.m in Sources */ = {isa = PBXBuildFile; fileRef = 27A20E4E17DFC66800F83C71 /* DDData.m */; };
 		27BEF2BC17DFD86900BA6567 /* CoreServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27BEF2BB17DFD86900BA6567 /* CoreServices.framework */; };
 		27BEF2BE17DFD87600BA6567 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27BEF2BD17DFD87600BA6567 /* Security.framework */; };
@@ -30,6 +30,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		275930C817E037F70078880F /* GCDAsyncSocket.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = GCDAsyncSocket.h; path = GCD/GCDAsyncSocket.h; sourceTree = "<group>"; };
+		275930C917E037F70078880F /* GCDAsyncSocket.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = GCDAsyncSocket.m; path = GCD/GCDAsyncSocket.m; sourceTree = "<group>"; };
 		27A20E2217DF8DAB00F83C71 /* WebSocket */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = WebSocket; sourceTree = BUILT_PRODUCTS_DIR; };
 		27A20E2517DF8DAB00F83C71 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		27A20E2817DF8DAB00F83C71 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
@@ -39,8 +41,6 @@
 		27A20E3817DF8E0700F83C71 /* WebSocketClient.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WebSocketClient.h; sourceTree = "<group>"; };
 		27A20E3917DF8E0700F83C71 /* WebSocketClient.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WebSocketClient.m; sourceTree = "<group>"; };
 		27A20E4817DFC46C00F83C71 /* WebSocket_Internal.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = WebSocket_Internal.h; sourceTree = "<group>"; };
-		27A20E4A17DFC66800F83C71 /* GCDAsyncSocket.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GCDAsyncSocket.h; sourceTree = "<group>"; };
-		27A20E4B17DFC66800F83C71 /* GCDAsyncSocket.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GCDAsyncSocket.m; sourceTree = "<group>"; };
 		27A20E4D17DFC66800F83C71 /* DDData.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DDData.h; sourceTree = "<group>"; };
 		27A20E4E17DFC66800F83C71 /* DDData.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DDData.m; sourceTree = "<group>"; };
 		27A20E5717DFC6C500F83C71 /* ws_echo.go */ = {isa = PBXFileReference; lastKnownFileType = text; path = ws_echo.go; sourceTree = "<group>"; };
@@ -69,11 +69,23 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		275930C717E037C90078880F /* AsyncSocket */ = {
+			isa = PBXGroup;
+			children = (
+				275930C817E037F70078880F /* GCDAsyncSocket.h */,
+				275930C917E037F70078880F /* GCDAsyncSocket.m */,
+			);
+			name = AsyncSocket;
+			path = CocoaAsyncSocket;
+			sourceTree = "<group>";
+		};
 		27A20E1917DF8DAB00F83C71 = {
 			isa = PBXGroup;
 			children = (
-				27A20E5717DFC6C500F83C71 /* ws_echo.go */,
 				27A20E2717DF8DAB00F83C71 /* WebSocket */,
+				27A20E4C17DFC66800F83C71 /* Categories */,
+				27BEF2AB17DFD73A00BA6567 /* vendor */,
+				27A20E5717DFC6C500F83C71 /* ws_echo.go */,
 				27A20E2417DF8DAB00F83C71 /* Frameworks */,
 				27A20E2317DF8DAB00F83C71 /* Products */,
 			);
@@ -107,9 +119,6 @@
 				27A20E3817DF8E0700F83C71 /* WebSocketClient.h */,
 				27A20E3917DF8E0700F83C71 /* WebSocketClient.m */,
 				27A20E2817DF8DAB00F83C71 /* main.m */,
-				27BEF2AB17DFD73A00BA6567 /* vendor */,
-				27A20E4917DFC66800F83C71 /* AsyncSocket */,
-				27A20E4C17DFC66800F83C71 /* Categories */,
 				27A20E2A17DF8DAB00F83C71 /* Supporting Files */,
 			);
 			path = WebSocket;
@@ -123,15 +132,6 @@
 			name = "Supporting Files";
 			sourceTree = "<group>";
 		};
-		27A20E4917DFC66800F83C71 /* AsyncSocket */ = {
-			isa = PBXGroup;
-			children = (
-				27A20E4A17DFC66800F83C71 /* GCDAsyncSocket.h */,
-				27A20E4B17DFC66800F83C71 /* GCDAsyncSocket.m */,
-			);
-			path = AsyncSocket;
-			sourceTree = SOURCE_ROOT;
-		};
 		27A20E4C17DFC66800F83C71 /* Categories */ = {
 			isa = PBXGroup;
 			children = (
@@ -144,10 +144,10 @@
 		27BEF2AB17DFD73A00BA6567 /* vendor */ = {
 			isa = PBXGroup;
 			children = (
+				275930C717E037C90078880F /* AsyncSocket */,
 				27BEF2AC17DFD76600BA6567 /* MYUtilities */,
 			);
-			name = vendor;
-			path = ../vendor;
+			path = vendor;
 			sourceTree = "<group>";
 		};
 		27BEF2AC17DFD76600BA6567 /* MYUtilities */ = {
@@ -214,8 +214,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				27A20E5317DFC66800F83C71 /* GCDAsyncSocket.m in Sources */,
 				27A20E2917DF8DAB00F83C71 /* main.m in Sources */,
+				275930CA17E037F70078880F /* GCDAsyncSocket.m in Sources */,
 				27A20E3B17DF8E0700F83C71 /* WebSocketClient.m in Sources */,
 				27A20E5417DFC66800F83C71 /* DDData.m in Sources */,
 				27A20E3A17DF8E0700F83C71 /* WebSocket.m in Sources */,

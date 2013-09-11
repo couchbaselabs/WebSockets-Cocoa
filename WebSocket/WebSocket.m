@@ -1,3 +1,11 @@
+//
+//  WebSocket.m
+//  WebSocket
+//
+//  Created by Jens Alfke on 9/10/13, based on Robbie Hanson's original code from
+//  https://github.com/robbiehanson/CocoaHTTPServer
+//
+
 #import "WebSocket.h"
 #import "WebSocket_Internal.h"
 #import "GCDAsyncSocket.h"

@@ -1,6 +1,12 @@
-#import <Foundation/Foundation.h>
+//
+//  WebSocket.h
+//  WebSocket
+//
+//  Created by Jens Alfke on 9/10/13, based on Robbie Hanson's original code from
+//  https://github.com/robbiehanson/CocoaHTTPServer
+//
 
-@class HTTPMessage;
+#import <Foundation/Foundation.h>
 @class GCDAsyncSocket;
 
 
@@ -11,23 +17,15 @@
 @interface WebSocket : NSObject
 
 /** Designated initializer */
-- (id)init;
+- (instancetype)init;
 
 @property GCDAsyncSocket* asyncSocket;
 
-/**
- * Delegate option.
- * 
- * In most cases it will be easier to subclass WebSocket,
- * but some circumstances may lead one to prefer standard delegate callbacks instead.
-**/
 @property (/* atomic */ weak) id delegate;
 
-/**
- * The WebSocket class is thread-safe, generally via its GCD queue.
- * All public API methods are thread-safe,
- * and the subclass API methods are thread-safe as they are all invoked on the same GCD queue.
-**/
+/** The WebSocket class is thread-safe, generally via its GCD queue.
+    All public API methods are thread-safe,
+    and the subclass API methods are thread-safe as they are all invoked on the same GCD queue. */
 @property (nonatomic, readonly) dispatch_queue_t websocketQueue;
 
 /** Begins an orderly shutdown of the WebSocket connection. */
@@ -36,14 +34,10 @@
 /** Abrupt socket disconnection. Normally you should call -close instead. */
 - (void)disconnect;
 
-/**
- * Public API
- * 
- * Sends a message over the WebSocket.
- * This method is thread-safe.
-**/
+/** Sends a text message over the WebSocket. This method is thread-safe. */
 - (void)sendMessage:(NSString *)msg;
 
+/** Sends a binary message over the WebSocket. This method is thread-safe. */
 - (void)sendBinaryMessage:(NSData*)msg;
 
 
@@ -53,18 +47,7 @@
 #pragma mark -
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-/**
- * There are two ways to create your own custom WebSocket:
- * 
- * - Subclass it and override the methods you're interested in.
- * - Use traditional delegate paradigm along with your own custom class.
- * 
- * They both exist to allow for maximum flexibility.
- * In most cases it will be easier to subclass WebSocket.
- * However some circumstances may lead one to prefer standard delegate callbacks instead.
- * One such example, you're already subclassing another class, so subclassing WebSocket isn't an option.
-**/
-
+/** Delegate API for WebSocket and its subclasses. */
 @protocol WebSocketDelegate
 @optional
 

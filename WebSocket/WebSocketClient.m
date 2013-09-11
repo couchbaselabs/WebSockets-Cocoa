@@ -26,6 +26,7 @@ enum {
 {
     NSURL* _url;
     CFHTTPMessageRef _httpMsg;
+    NSDictionary* _tlsSettings;
     NSString* _nonceKey;
 }
 
@@ -42,11 +43,6 @@ enum {
             host = [host stringByAppendingFormat: @":%@", url.port];
 
         // http://tools.ietf.org/html/rfc6455#section-4.1
-        uint8_t nonceBytes[16];
-        SecRandomCopyBytes(kSecRandomDefault, sizeof(nonceBytes), nonceBytes);
-        NSData* nonceData = [NSData dataWithBytes: nonceBytes length: sizeof(nonceBytes)];
-        _nonceKey = [nonceData base64Encoded];
-
         _httpMsg = CFHTTPMessageCreateRequest(NULL, CFSTR("GET"),
                                               (__bridge CFURLRef)url,
                                               kCFHTTPVersion1_1);
@@ -54,14 +50,12 @@ enum {
         [self setValue: @"Upgrade" forClientHeaderField: @"Connection"];
         [self setValue: @"websocket" forClientHeaderField: @"Upgrade"];
         [self setValue: @"13" forClientHeaderField: @"Sec-WebSocket-Version"];
-        [self setValue: _nonceKey forClientHeaderField: @"Sec-WebSocket-Key"];
     }
     return self;
 }
 
 
-- (void)dealloc
-{
+- (void)dealloc {
     if (_httpMsg)
         CFRelease(_httpMsg);
 }
@@ -77,27 +71,45 @@ enum {
           forClientHeaderField: @"Sec-WebSocket-Protocol"];
 }
 
+- (void) useTLS: (NSDictionary*)tlsSettings {
+    _tlsSettings = tlsSettings;
+}
 
-- (BOOL) connect: (NSError**)outError {
+
+- (BOOL) connectWithTimeout: (NSTimeInterval)timeout error: (NSError**)outError {
     NSParameterAssert(!_asyncSocket);
+
+    // Configure the nonce/key for the request:
+    uint8_t nonceBytes[16];
+    SecRandomCopyBytes(kSecRandomDefault, sizeof(nonceBytes), nonceBytes);
+    NSData* nonceData = [NSData dataWithBytes: nonceBytes length: sizeof(nonceBytes)];
+    _nonceKey = [nonceData base64Encoded];
+    [self setValue: _nonceKey forClientHeaderField: @"Sec-WebSocket-Key"];
 
     GCDAsyncSocket* socket = [[GCDAsyncSocket alloc] initWithDelegate: self
                                                         delegateQueue: _websocketQueue];
     if (![socket connectToHost: _url.host
                         onPort: (_url.port.intValue ?: 80)
+                   withTimeout: timeout
                          error: outError]) {
         return NO;
     }
+    if (_tlsSettings)
+        [socket startTLS: _tlsSettings];
     self.asyncSocket = socket;
     [super start];
     return YES;
 }
 
 
+#pragma mark - CONNECTION:
+
+
 - (void) didOpen {
     HTTPLogTrace();
+
     NSData* requestData = CFBridgingRelease(CFHTTPMessageCopySerializedMessage(_httpMsg));
-    NSLog(@"Sending HTTP request:\n%@", [[NSString alloc] initWithData: requestData encoding:NSUTF8StringEncoding]);
+    //NSLog(@"Sending HTTP request:\n%@", [[NSString alloc] initWithData: requestData encoding:NSUTF8StringEncoding]);
     [_asyncSocket writeData: requestData withTimeout: TIMEOUT_NONE tag: TAG_HTTP_REQUEST_HEADERS];
     [_asyncSocket readDataToData: [@"\r\n\r\n" dataUsingEncoding: NSASCIIStringEncoding]
                      withTimeout: TIMEOUT_NONE tag: TAG_HTTP_RESPONSE_HEADERS];
@@ -116,7 +128,7 @@ static BOOL checkHeader(CFHTTPMessageRef msg, NSString* header, NSString* expect
 
 - (void) gotHTTPResponse: (CFHTTPMessageRef)httpResponse data: (NSData*)responseData {
     HTTPLogTrace();
-    NSLog(@"Got HTTP response:\n%@", [[NSString alloc] initWithData: responseData encoding:NSUTF8StringEncoding]);
+    //NSLog(@"Got HTTP response:\n%@", [[NSString alloc] initWithData: responseData encoding:NSUTF8StringEncoding]);
     if (!CFHTTPMessageAppendBytes(httpResponse, responseData.bytes, responseData.length) ||
             !CFHTTPMessageIsHeaderComplete(httpResponse)) {
         // Error reading response!
@@ -156,6 +168,7 @@ static BOOL checkHeader(CFHTTPMessageRef msg, NSString* header, NSString* expect
 
 - (void)socket:(GCDAsyncSocket *)sock didReadData:(NSData *)data withTag:(long)tag {
     if (tag == TAG_HTTP_RESPONSE_HEADERS) {
+        // HTTP response received:
         CFHTTPMessageRef httpResponse = CFHTTPMessageCreateEmpty(NULL, false);
         [self gotHTTPResponse: httpResponse data: data];
         CFRelease(httpResponse);
