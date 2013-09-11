@@ -9,7 +9,12 @@
 /* Begin PBXBuildFile section */
 		27A20E2617DF8DAB00F83C71 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27A20E2517DF8DAB00F83C71 /* Foundation.framework */; };
 		27A20E2917DF8DAB00F83C71 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 27A20E2817DF8DAB00F83C71 /* main.m */; };
-		27A20E2D17DF8DAB00F83C71 /* WebSocket.1 in CopyFiles */ = {isa = PBXBuildFile; fileRef = 27A20E2C17DF8DAB00F83C71 /* WebSocket.1 */; };
+		27A20E3A17DF8E0700F83C71 /* WebSocket.m in Sources */ = {isa = PBXBuildFile; fileRef = 27A20E3717DF8E0700F83C71 /* WebSocket.m */; };
+		27A20E3B17DF8E0700F83C71 /* WebSocketClient.m in Sources */ = {isa = PBXBuildFile; fileRef = 27A20E3917DF8E0700F83C71 /* WebSocketClient.m */; };
+		27A20E5317DFC66800F83C71 /* GCDAsyncSocket.m in Sources */ = {isa = PBXBuildFile; fileRef = 27A20E4B17DFC66800F83C71 /* GCDAsyncSocket.m */; };
+		27A20E5417DFC66800F83C71 /* DDData.m in Sources */ = {isa = PBXBuildFile; fileRef = 27A20E4E17DFC66800F83C71 /* DDData.m */; };
+		27BEF2BC17DFD86900BA6567 /* CoreServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27BEF2BB17DFD86900BA6567 /* CoreServices.framework */; };
+		27BEF2BE17DFD87600BA6567 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27BEF2BD17DFD87600BA6567 /* Security.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -19,7 +24,6 @@
 			dstPath = /usr/share/man/man1/;
 			dstSubfolderSpec = 0;
 			files = (
-				27A20E2D17DF8DAB00F83C71 /* WebSocket.1 in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 1;
 		};
@@ -30,7 +34,25 @@
 		27A20E2517DF8DAB00F83C71 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		27A20E2817DF8DAB00F83C71 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		27A20E2B17DF8DAB00F83C71 /* WebSocket-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "WebSocket-Prefix.pch"; sourceTree = "<group>"; };
-		27A20E2C17DF8DAB00F83C71 /* WebSocket.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = WebSocket.1; sourceTree = "<group>"; };
+		27A20E3617DF8E0700F83C71 /* WebSocket.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WebSocket.h; sourceTree = "<group>"; };
+		27A20E3717DF8E0700F83C71 /* WebSocket.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WebSocket.m; sourceTree = "<group>"; };
+		27A20E3817DF8E0700F83C71 /* WebSocketClient.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WebSocketClient.h; sourceTree = "<group>"; };
+		27A20E3917DF8E0700F83C71 /* WebSocketClient.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WebSocketClient.m; sourceTree = "<group>"; };
+		27A20E4817DFC46C00F83C71 /* WebSocket_Internal.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = WebSocket_Internal.h; sourceTree = "<group>"; };
+		27A20E4A17DFC66800F83C71 /* GCDAsyncSocket.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GCDAsyncSocket.h; sourceTree = "<group>"; };
+		27A20E4B17DFC66800F83C71 /* GCDAsyncSocket.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GCDAsyncSocket.m; sourceTree = "<group>"; };
+		27A20E4D17DFC66800F83C71 /* DDData.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DDData.h; sourceTree = "<group>"; };
+		27A20E4E17DFC66800F83C71 /* DDData.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DDData.m; sourceTree = "<group>"; };
+		27A20E5717DFC6C500F83C71 /* ws_echo.go */ = {isa = PBXFileReference; lastKnownFileType = text; path = ws_echo.go; sourceTree = "<group>"; };
+		27BEF2AD17DFD78900BA6567 /* CollectionUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CollectionUtils.h; sourceTree = "<group>"; };
+		27BEF2AE17DFD78900BA6567 /* CollectionUtils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CollectionUtils.m; sourceTree = "<group>"; };
+		27BEF2AF17DFD78900BA6567 /* Logging.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Logging.h; sourceTree = "<group>"; };
+		27BEF2B017DFD78900BA6567 /* Logging.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Logging.m; sourceTree = "<group>"; };
+		27BEF2B117DFD78A00BA6567 /* Test.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Test.h; sourceTree = "<group>"; };
+		27BEF2B217DFD78A00BA6567 /* Test.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Test.m; sourceTree = "<group>"; };
+		27BEF2B917DFD85B00BA6567 /* CoreFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreFoundation.framework; path = System/Library/Frameworks/CoreFoundation.framework; sourceTree = SDKROOT; };
+		27BEF2BB17DFD86900BA6567 /* CoreServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreServices.framework; path = System/Library/Frameworks/CoreServices.framework; sourceTree = SDKROOT; };
+		27BEF2BD17DFD87600BA6567 /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -38,6 +60,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				27BEF2BE17DFD87600BA6567 /* Security.framework in Frameworks */,
+				27BEF2BC17DFD86900BA6567 /* CoreServices.framework in Frameworks */,
 				27A20E2617DF8DAB00F83C71 /* Foundation.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -48,6 +72,7 @@
 		27A20E1917DF8DAB00F83C71 = {
 			isa = PBXGroup;
 			children = (
+				27A20E5717DFC6C500F83C71 /* ws_echo.go */,
 				27A20E2717DF8DAB00F83C71 /* WebSocket */,
 				27A20E2417DF8DAB00F83C71 /* Frameworks */,
 				27A20E2317DF8DAB00F83C71 /* Products */,
@@ -65,6 +90,9 @@
 		27A20E2417DF8DAB00F83C71 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				27BEF2BD17DFD87600BA6567 /* Security.framework */,
+				27BEF2BB17DFD86900BA6567 /* CoreServices.framework */,
+				27BEF2B917DFD85B00BA6567 /* CoreFoundation.framework */,
 				27A20E2517DF8DAB00F83C71 /* Foundation.framework */,
 			);
 			name = Frameworks;
@@ -73,8 +101,15 @@
 		27A20E2717DF8DAB00F83C71 /* WebSocket */ = {
 			isa = PBXGroup;
 			children = (
+				27A20E3617DF8E0700F83C71 /* WebSocket.h */,
+				27A20E3717DF8E0700F83C71 /* WebSocket.m */,
+				27A20E4817DFC46C00F83C71 /* WebSocket_Internal.h */,
+				27A20E3817DF8E0700F83C71 /* WebSocketClient.h */,
+				27A20E3917DF8E0700F83C71 /* WebSocketClient.m */,
 				27A20E2817DF8DAB00F83C71 /* main.m */,
-				27A20E2C17DF8DAB00F83C71 /* WebSocket.1 */,
+				27BEF2AB17DFD73A00BA6567 /* vendor */,
+				27A20E4917DFC66800F83C71 /* AsyncSocket */,
+				27A20E4C17DFC66800F83C71 /* Categories */,
 				27A20E2A17DF8DAB00F83C71 /* Supporting Files */,
 			);
 			path = WebSocket;
@@ -86,6 +121,46 @@
 				27A20E2B17DF8DAB00F83C71 /* WebSocket-Prefix.pch */,
 			);
 			name = "Supporting Files";
+			sourceTree = "<group>";
+		};
+		27A20E4917DFC66800F83C71 /* AsyncSocket */ = {
+			isa = PBXGroup;
+			children = (
+				27A20E4A17DFC66800F83C71 /* GCDAsyncSocket.h */,
+				27A20E4B17DFC66800F83C71 /* GCDAsyncSocket.m */,
+			);
+			path = AsyncSocket;
+			sourceTree = SOURCE_ROOT;
+		};
+		27A20E4C17DFC66800F83C71 /* Categories */ = {
+			isa = PBXGroup;
+			children = (
+				27A20E4D17DFC66800F83C71 /* DDData.h */,
+				27A20E4E17DFC66800F83C71 /* DDData.m */,
+			);
+			path = Categories;
+			sourceTree = SOURCE_ROOT;
+		};
+		27BEF2AB17DFD73A00BA6567 /* vendor */ = {
+			isa = PBXGroup;
+			children = (
+				27BEF2AC17DFD76600BA6567 /* MYUtilities */,
+			);
+			name = vendor;
+			path = ../vendor;
+			sourceTree = "<group>";
+		};
+		27BEF2AC17DFD76600BA6567 /* MYUtilities */ = {
+			isa = PBXGroup;
+			children = (
+				27BEF2AD17DFD78900BA6567 /* CollectionUtils.h */,
+				27BEF2AE17DFD78900BA6567 /* CollectionUtils.m */,
+				27BEF2AF17DFD78900BA6567 /* Logging.h */,
+				27BEF2B017DFD78900BA6567 /* Logging.m */,
+				27BEF2B117DFD78A00BA6567 /* Test.h */,
+				27BEF2B217DFD78A00BA6567 /* Test.m */,
+			);
+			path = MYUtilities;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -139,7 +214,11 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				27A20E5317DFC66800F83C71 /* GCDAsyncSocket.m in Sources */,
 				27A20E2917DF8DAB00F83C71 /* main.m in Sources */,
+				27A20E3B17DF8E0700F83C71 /* WebSocketClient.m in Sources */,
+				27A20E5417DFC66800F83C71 /* DDData.m in Sources */,
+				27A20E3A17DF8E0700F83C71 /* WebSocket.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -172,13 +251,15 @@
 					"$(inherited)",
 				);
 				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = NO;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
 				GCC_WARN_UNDECLARED_SELECTOR = YES;
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 10.9;
+				MACOSX_DEPLOYMENT_TARGET = 10.7;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
 			};
@@ -205,13 +286,15 @@
 				ENABLE_NS_ASSERTIONS = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
+				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = NO;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
 				GCC_WARN_UNDECLARED_SELECTOR = YES;
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 10.9;
+				MACOSX_DEPLOYMENT_TARGET = 10.7;
 				SDKROOT = macosx;
 			};
 			name = Release;
@@ -253,6 +336,7 @@
 				27A20E3217DF8DAB00F83C71 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};

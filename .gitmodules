@@ -1,0 +1,3 @@
+[submodule "vendor/MYUtilities"]
+	path = vendor/MYUtilities
+	url = git://github.com/snej/MYUtilities.git
