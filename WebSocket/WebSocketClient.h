@@ -14,6 +14,8 @@
 /** Designated initializer. The scheme of the URL is ignored. */
 - (instancetype) initWithURL: (NSURL*)url;
 
+- (id)initWithURLRequest:(NSURLRequest *)request;
+
 /** Sets a value for an HTTP header field in the initial request. Call this before -connect:. */
 - (void) setValue:(NSString *)value forClientHeaderField:(NSString *)field;
 

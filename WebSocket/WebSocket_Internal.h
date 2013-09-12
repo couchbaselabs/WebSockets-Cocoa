@@ -20,12 +20,13 @@
 @interface WebSocket () <GCDAsyncSocketDelegate>
 {
 @protected
-	id __unsafe_unretained _delegate;
+	__weak id<WebSocketDelegate> _delegate;
 	dispatch_queue_t _websocketQueue;
 	GCDAsyncSocket *_asyncSocket;
 
-	BOOL _isStarted;
-	BOOL _isOpen;
+    WebSocketState _state;
+//	BOOL _isStarted;
+//	BOOL _isOpen;
     BOOL _isClient;
 }
 
@@ -35,7 +36,7 @@
 
 - (void)didOpen;
 - (void)didReceiveMessage:(NSString *)msg;
-- (void)didClose;
-- (void)connectionFailed: (NSString*)reason;
+- (void)didReceiveBinaryMessage:(NSData *)msg;
+- (void)didCloseWithCode: (WebSocketCloseCode)code reason: (NSString*)reason;
 
 @end

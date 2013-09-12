@@ -19,6 +19,7 @@ enum {
     TAG_HTTP_RESPONSE_HEADERS,
 };
 
+#define kDefaultTimeout     60
 #define TIMEOUT_NONE          -1
 
 
@@ -26,6 +27,7 @@ enum {
 {
     NSURL* _url;
     CFHTTPMessageRef _httpMsg;
+    NSTimeInterval _timeout;
     NSDictionary* _tlsSettings;
     NSString* _nonceKey;
 }
@@ -36,6 +38,7 @@ enum {
     if (self) {
         _url = url;
         _isClient = YES;
+        _timeout = kDefaultTimeout;
 
         // Set up the HTTP request:
         NSString* host = url.host;
@@ -50,6 +53,18 @@ enum {
         [self setValue: @"Upgrade" forClientHeaderField: @"Connection"];
         [self setValue: @"websocket" forClientHeaderField: @"Upgrade"];
         [self setValue: @"13" forClientHeaderField: @"Sec-WebSocket-Version"];
+    }
+    return self;
+}
+
+
+- (id)initWithURLRequest:(NSURLRequest *)request {
+    self = [self initWithURL: request.URL];
+    if (self) {
+        _timeout = request.timeoutInterval;
+        NSDictionary* headers = request.allHTTPHeaderFields;
+        for (NSString* headerName in headers)
+            [self setValue: headers[headerName] forClientHeaderField: headerName];
     }
     return self;
 }
@@ -108,6 +123,9 @@ enum {
 - (void) didOpen {
     HTTPLogTrace();
 
+    // Now that the underlying socket has opened, send the HTTP request and wait for the
+    // HTTP response. I do *not* call [super didOpen] until I receive the response, because the
+    // WebSocket isn't ready for business till then.
     NSData* requestData = CFBridgingRelease(CFHTTPMessageCopySerializedMessage(_httpMsg));
     //NSLog(@"Sending HTTP request:\n%@", [[NSString alloc] initWithData: requestData encoding:NSUTF8StringEncoding]);
     [_asyncSocket writeData: requestData withTimeout: TIMEOUT_NONE tag: TAG_HTTP_REQUEST_HEADERS];
@@ -132,21 +150,25 @@ static BOOL checkHeader(CFHTTPMessageRef msg, NSString* header, NSString* expect
     if (!CFHTTPMessageAppendBytes(httpResponse, responseData.bytes, responseData.length) ||
             !CFHTTPMessageIsHeaderComplete(httpResponse)) {
         // Error reading response!
-        [self connectionFailed: @"Unreadable HTTP response"];
+        [self didCloseWithCode: kWebSocketCloseProtocolError
+                        reason: @"Unreadable HTTP response"];
         return;
     }
 
     CFIndex httpStatus = CFHTTPMessageGetResponseStatusCode(httpResponse);
     if (httpStatus != 101) {
         // TODO: Handle other responses, i.e. 401 or 30x
-        [self connectionFailed: [NSString stringWithFormat: @"Invalid response status %ld",
-                                                                httpStatus]];
+        NSString* reason = CFBridgingRelease(CFHTTPMessageCopyResponseStatusLine(httpResponse));
+        [self didCloseWithCode: (httpStatus < 1000 ? httpStatus : kWebSocketClosePolicyError)
+                        reason: reason];
         return;
     } else if (!checkHeader(httpResponse, @"Connection", @"Upgrade", NO)) {
-        [self connectionFailed: @"Invalid 'Connection' header"];
+        [self didCloseWithCode: kWebSocketCloseProtocolError
+                        reason: @"Invalid 'Connection' header"];
         return;
     } else if (!checkHeader(httpResponse, @"Upgrade", @"websocket", NO)) {
-        [self connectionFailed: @"Invalid 'Upgrade' header"];
+        [self didCloseWithCode: kWebSocketCloseProtocolError
+                        reason: @"Invalid 'Upgrade' header"];
         return;
     }
 
@@ -155,13 +177,14 @@ static BOOL checkHeader(CFHTTPMessageRef msg, NSString* header, NSString* expect
     str = [[[str dataUsingEncoding: NSASCIIStringEncoding] sha1Digest] base64Encoded];
 
     if (!checkHeader(httpResponse, @"Sec-WebSocket-Accept", str, YES)) {
-        [self connectionFailed: @"Invalid 'Sec-WebSocket-Accept' header"];
+        [self didCloseWithCode: kWebSocketCloseProtocolError
+                        reason: @"Invalid 'Sec-WebSocket-Accept' header"];
         return;
     }
 
     // TODO: Check Sec-WebSocket-Extensions for unknown extensions
 
-    // Now I can tell the delegate I'm open:
+    // Now I can finally tell the delegate I'm open (see explanation in my -didOpen method.)
     [super didOpen];
 }
 

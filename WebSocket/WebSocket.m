@@ -89,6 +89,11 @@ static inline void maskBytes(NSMutableData* data, NSUInteger offset, NSUInteger 
 }
 
 
+@interface WebSocket ()
+@property (readwrite) WebSocketState state;
+@end
+
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma mark -
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -96,7 +101,7 @@ static inline void maskBytes(NSMutableData* data, NSUInteger offset, NSUInteger 
 @implementation WebSocket
 {
 	BOOL _isRFC6455;
-    BOOL _closing;
+//    BOOL _closing;
 	BOOL _nextFrameMasked;
 	NSData *_maskingKey;
 	NSUInteger _nextOpCode;
@@ -107,7 +112,7 @@ static inline void maskBytes(NSMutableData* data, NSUInteger offset, NSUInteger 
 #pragma mark - Setup and Teardown
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-@synthesize websocketQueue=_websocketQueue;
+@synthesize websocketQueue=_websocketQueue, state=_state;
 
 static NSData* kTerminator;
 
@@ -120,6 +125,7 @@ static NSData* kTerminator;
 	HTTPLogTrace();
 
 	if ((self = [super init])) {
+        _state = kWebSocketUnopened;
 		_websocketQueue = dispatch_queue_create("WebSocket", NULL);
 		_isRFC6455 = YES;
 	}
@@ -175,8 +181,9 @@ static NSData* kTerminator;
 	// Subclasses are encouraged to override the didOpen method instead.
 	
 	dispatch_async(_websocketQueue, ^{ @autoreleasepool {
-		if (_isStarted) return;
-		_isStarted = YES;
+		if (_state > kWebSocketUnopened)
+            return;
+		self.state = kWebSocketOpening;
 		
         [self didOpen];
 	}});
@@ -195,12 +202,29 @@ static NSData* kTerminator;
 }
 
 - (void) close {
+    // Codes are defined in http://tools.ietf.org/html/rfc6455#section-7.4
+    [self closeWithCode: 1000 reason: nil];
+}
+
+- (void) closeWithCode:(WebSocketCloseCode)code reason:(NSString *)reason {
 	HTTPLogTrace();
+
+    // http://tools.ietf.org/html/rfc6455#section-5.5.1
+    NSMutableData* msg = nil;
+    if (code > 0 || reason != nil) {
+        UInt16 rawCode = NSSwapHostShortToBig(code);
+        if (reason)
+            msg = [[reason dataUsingEncoding: NSUTF8StringEncoding] mutableCopy];
+        else
+            msg = [NSMutableData dataWithCapacity: sizeof(rawCode)];
+        [msg replaceBytesInRange: NSMakeRange(0, 0) withBytes: &rawCode length: sizeof(rawCode)];
+    }
+
 	dispatch_async(_websocketQueue, ^{ @autoreleasepool {
-        if (!_isStarted || _closing)
-            return;
-        [self sendFrame: nil type: WS_OP_CONNECTION_CLOSE tag: 0];
-        _closing = YES;
+        if (_state == kWebSocketOpen) {
+            [self sendFrame: msg type: WS_OP_CONNECTION_CLOSE tag: 0];
+            self.state = kWebSocketClosing;
+        }
     }});
 }
 
@@ -222,7 +246,7 @@ static NSData* kTerminator;
 	}
 }
 
-- (void)didClose {
+- (void)didCloseWithCode: (WebSocketCloseCode)code reason: (NSString*)reason {
 	HTTPLogTrace();
 
 	// Override me to perform any cleanup when the socket is closed
@@ -231,21 +255,10 @@ static NSData* kTerminator;
 	// Don't forget to invoke [super didClose] at the end of your method.
 
 	// Notify delegate
-	if ([_delegate respondsToSelector:@selector(webSocketDidClose:)]) {
-		[_delegate webSocketDidClose:self];
+	if ([_delegate respondsToSelector:@selector(webSocket:didCloseWithCode:reason:)]) {
+		[_delegate webSocket:self didCloseWithCode: code reason: reason];
 	}
-
-	// Notify HTTPServer
-	[[NSNotificationCenter defaultCenter] postNotificationName:WebSocketDidDieNotification object:self];
 }
-
-- (void) connectionFailed: (NSString*)reason {
-    HTTPLogTrace();
-    if ([_delegate respondsToSelector: @selector(webSocketDidFail:)])
-        [_delegate webSocketDidFail: reason];
-    [self disconnect];    // Note: in original version this was [self didClose] --jpa
-}
-
 
 #pragma mark - SENDING MESSAGES:
 
@@ -343,7 +356,8 @@ static NSData* kTerminator;
             }
             return NO;
         default:
-			[self connectionFailed: @"Unsupported frame type"];
+			[self didCloseWithCode: kWebSocketCloseProtocolError
+                            reason: @"Unsupported frame type"];
             return NO;
     }
 }
@@ -416,7 +430,8 @@ static NSData* kTerminator;
 			[_asyncSocket readDataToData: kTerminator withTimeout:TIMEOUT_NONE tag:TAG_MSG_PLUS_SUFFIX];
 		} else {
 			// Unsupported frame type
-			[self connectionFailed: @"Received unsupported frame type"];
+			[self didCloseWithCode: kWebSocketCloseProtocolError
+                            reason: @"Unsupported frame type"];
 		}
 	} else if (tag == TAG_PAYLOAD_PREFIX) {
 		UInt8 *pFrame = (UInt8 *)[data bytes];
@@ -427,7 +442,8 @@ static NSData* kTerminator;
 			[_asyncSocket readDataToLength:1 withTimeout:TIMEOUT_NONE tag:TAG_PAYLOAD_LENGTH];
 		} else {
 			// Unsupported frame type
-			[self connectionFailed: @"Unsupported frame type"];
+			[self didCloseWithCode: kWebSocketCloseProtocolError
+                            reason: @"Invalid incoming frame"];
 		}
 	}
 	 else if (tag == TAG_PAYLOAD_LENGTH) {
@@ -455,8 +471,9 @@ static NSData* kTerminator;
 		}
 		[_asyncSocket readDataToLength:length withTimeout:TIMEOUT_NONE tag:TAG_MSG_WITH_LENGTH];
 	} else if (tag == TAG_PAYLOAD_LENGTH64) {
-		// FIXME: 64bit data size in memory?
-		[self connectionFailed: @"Oops, 64-bit frame size not yet supported"];
+		// TODO: 64bit data size in memory?
+        [self didCloseWithCode: kWebSocketClosePolicyError
+                        reason: @"Oops, 64-bit frame size not yet supported"];
 	} else if (tag == TAG_MSG_WITH_LENGTH) {
 		NSUInteger msgLength = [data length];
 		if (_nextFrameMasked && _maskingKey) {
@@ -490,8 +507,9 @@ static NSData* kTerminator;
 }
 
 - (void)socketDidDisconnect:(GCDAsyncSocket *)sock withError:(NSError *)error {
-	HTTPLogTraceWith("error= %@", error);
-	[self didClose];
+	HTTPLogTraceWith("error= %@", error.localizedDescription);
+	[self didCloseWithCode: kWebSocketCloseAbnormal
+                    reason: error.localizedDescription];
 }
 
 @end
