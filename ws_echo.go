@@ -10,6 +10,19 @@ import (
 	"code.google.com/p/go.net/websocket"
 )
 
+// This example demonstrates a trivial echo server.
+func main() {
+    log.Printf("Listening on :12345 ...")
+
+    http.Handle("/dump", NewWebSocketHandler(DumpHandler))
+    http.Handle("/blip", NewWebSocketHandler(DumpBLIPHandler))
+    http.Handle("/echo", NewWebSocketHandler(EchoHandler))
+
+    if err := http.ListenAndServe(":12345", nil); err != nil {
+        panic("ListenAndServe: " + err.Error())
+    }
+}
+
 func DumpByteArray(frame []byte) {
 	for line := 0; line <= 1; line++ {
 		fmt.Print("\t")
@@ -80,17 +93,4 @@ func NewWebSocketHandler(fn func([]byte) []byte) http.Handler {
 		log.Printf("--- End connection (%v)", err)
 	}
 	return server
-}
-
-// This example demonstrates a trivial echo server.
-func main() {
-	log.Printf("Listening on :12345 ...")
-
-	http.Handle("/dump", NewWebSocketHandler(DumpHandler))
-	http.Handle("/blip", NewWebSocketHandler(DumpBLIPHandler))
-	http.Handle("/echo", NewWebSocketHandler(EchoHandler))
-
-	if err := http.ListenAndServe(":12345", nil); err != nil {
-		panic("ListenAndServe: " + err.Error())
-	}
 }

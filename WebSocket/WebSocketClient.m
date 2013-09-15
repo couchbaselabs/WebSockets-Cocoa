@@ -19,93 +19,47 @@ enum {
     TAG_HTTP_RESPONSE_HEADERS,
 };
 
-#define kDefaultTimeout     60
-#define TIMEOUT_NONE          -1
-
 
 @implementation WebSocketClient
 {
-    NSURL* _url;
-    CFHTTPMessageRef _httpMsg;
-    NSTimeInterval _timeout;
+    NSURLRequest* _urlRequest;
     NSDictionary* _tlsSettings;
+    NSArray* _protocols;
     NSString* _nonceKey;
 }
 
 
-- (instancetype) initWithURL: (NSURL*)url {
+- (id)initWithURLRequest:(NSURLRequest *)urlRequest {
     self = [super init];
     if (self) {
-        _url = url;
+        _urlRequest = urlRequest;
         _isClient = YES;
-        _timeout = kDefaultTimeout;
-
-        // Set up the HTTP request:
-        NSString* host = url.host;
-        if (url.port)
-            host = [host stringByAppendingFormat: @":%@", url.port];
-
-        // http://tools.ietf.org/html/rfc6455#section-4.1
-        _httpMsg = CFHTTPMessageCreateRequest(NULL, CFSTR("GET"),
-                                              (__bridge CFURLRef)url,
-                                              kCFHTTPVersion1_1);
-        [self setValue: host forClientHeaderField: @"Host"];
-        [self setValue: @"Upgrade" forClientHeaderField: @"Connection"];
-        [self setValue: @"websocket" forClientHeaderField: @"Upgrade"];
-        [self setValue: @"13" forClientHeaderField: @"Sec-WebSocket-Version"];
+        self.timeout = urlRequest.timeoutInterval;
+        if ([urlRequest.URL.scheme caseInsensitiveCompare: @"https"] == 0)
+            _tlsSettings = @{};  // default settings
     }
     return self;
 }
 
-
-- (id)initWithURLRequest:(NSURLRequest *)request {
-    self = [self initWithURL: request.URL];
-    if (self) {
-        _timeout = request.timeoutInterval;
-        NSDictionary* headers = request.allHTTPHeaderFields;
-        for (NSString* headerName in headers)
-            [self setValue: headers[headerName] forClientHeaderField: headerName];
-    }
-    return self;
+- (id)initWithURL:(NSURL*)url {
+    return [self initWithURLRequest: [NSURLRequest requestWithURL: url]];
 }
 
-
-- (void)dealloc {
-    if (_httpMsg)
-        CFRelease(_httpMsg);
-}
-
-
-- (void) setValue:(NSString *)value forClientHeaderField:(NSString *)field {
-    CFHTTPMessageSetHeaderFieldValue(_httpMsg, (__bridge CFStringRef)field,
-                                               (__bridge CFStringRef)value);
-}
-
-- (void) setProtocols:(NSArray *)protocols {
-    [self setValue: [protocols componentsJoinedByString: @","]
-          forClientHeaderField: @"Sec-WebSocket-Protocol"];
-}
 
 - (void) useTLS: (NSDictionary*)tlsSettings {
     _tlsSettings = tlsSettings;
 }
 
 
-- (BOOL) connectWithTimeout: (NSTimeInterval)timeout error: (NSError**)outError {
+- (BOOL) connect: (NSError**)outError {
     NSParameterAssert(!_asyncSocket);
 
-    // Configure the nonce/key for the request:
-    uint8_t nonceBytes[16];
-    SecRandomCopyBytes(kSecRandomDefault, sizeof(nonceBytes), nonceBytes);
-    NSData* nonceData = [NSData dataWithBytes: nonceBytes length: sizeof(nonceBytes)];
-    _nonceKey = [nonceData base64Encoded];
-    [self setValue: _nonceKey forClientHeaderField: @"Sec-WebSocket-Key"];
-
+    NSURL* url = _urlRequest.URL;
     GCDAsyncSocket* socket = [[GCDAsyncSocket alloc] initWithDelegate: self
                                                         delegateQueue: _websocketQueue];
-    if (![socket connectToHost: _url.host
-                        onPort: (_url.port.intValue ?: 80)
-                   withTimeout: timeout
+    if (![socket connectToHost: url.host
+                        onPort: (url.port.intValue ?: 80)
+                   withTimeout: self.timeout
                          error: outError]) {
         return NO;
     }
@@ -126,11 +80,44 @@ enum {
     // Now that the underlying socket has opened, send the HTTP request and wait for the
     // HTTP response. I do *not* call [super didOpen] until I receive the response, because the
     // WebSocket isn't ready for business till then.
-    NSData* requestData = CFBridgingRelease(CFHTTPMessageCopySerializedMessage(_httpMsg));
-    //NSLog(@"Sending HTTP request:\n%@", [[NSString alloc] initWithData: requestData encoding:NSUTF8StringEncoding]);
-    [_asyncSocket writeData: requestData withTimeout: TIMEOUT_NONE tag: TAG_HTTP_REQUEST_HEADERS];
+
+    // Create the "Host" header:
+    NSURL* url = _urlRequest.URL;
+    NSString* host = url.host;
+    if (url.port)
+        host = [host stringByAppendingFormat: @":%@", url.port];
+
+    // Configure the nonce/key for the request:
+    uint8_t nonceBytes[16];
+    SecRandomCopyBytes(kSecRandomDefault, sizeof(nonceBytes), nonceBytes);
+    NSData* nonceData = [NSData dataWithBytes: nonceBytes length: sizeof(nonceBytes)];
+    _nonceKey = [nonceData base64Encoded];
+
+    // http://tools.ietf.org/html/rfc6455#section-4.1
+    CFHTTPMessageRef httpMsg = CFHTTPMessageCreateRequest(NULL, CFSTR("GET"),
+                                                          (__bridge CFURLRef)url,
+                                                          kCFHTTPVersion1_1);
+    NSMutableDictionary* headers = _urlRequest.allHTTPHeaderFields.mutableCopy;
+    if (!headers)
+        headers = [NSMutableDictionary dictionary];
+    headers[@"Host"] = host;
+    headers[@"Connection"] = @"Upgrade";
+    headers[@"Upgrade"] = @"websocket";
+    headers[@"Sec-WebSocket-Version"] = @"13";
+    headers[@"Sec-WebSocket-Key"] = _nonceKey;
+    if (_protocols)
+        headers[@"Sec-WebSocket-Protocol"] = [_protocols componentsJoinedByString: @","];
+    for (NSString* header in headers)
+        CFHTTPMessageSetHeaderFieldValue(httpMsg, (__bridge CFStringRef)header,
+                                                  (__bridge CFStringRef)headers[header]);
+
+    NSData* requestData = CFBridgingRelease(CFHTTPMessageCopySerializedMessage(httpMsg));
+    NSLog(@"Sending HTTP request:\n%@", [[NSString alloc] initWithData: requestData encoding:NSUTF8StringEncoding]);
+    [_asyncSocket writeData: requestData withTimeout: self.timeout
+                        tag: TAG_HTTP_REQUEST_HEADERS];
     [_asyncSocket readDataToData: [@"\r\n\r\n" dataUsingEncoding: NSASCIIStringEncoding]
-                     withTimeout: TIMEOUT_NONE tag: TAG_HTTP_RESPONSE_HEADERS];
+                     withTimeout: self.timeout
+                             tag: TAG_HTTP_RESPONSE_HEADERS];
 }
 
 

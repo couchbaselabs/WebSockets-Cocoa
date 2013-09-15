@@ -14,15 +14,23 @@
 @implementation BLIPRequest (HTTP)
 
 
+static NSSet* kIgnoredHeaders;
+
+
 + (instancetype) requestWithHTTPRequest: (NSURLRequest*)req {
+    if (!kIgnoredHeaders) {
+        kIgnoredHeaders = [NSSet setWithObjects: @"host", nil];
+    }
     CFHTTPMessageRef msg = CFHTTPMessageCreateRequest(NULL,
                                                       (__bridge CFStringRef)req.HTTPMethod,
                                                       (__bridge CFURLRef)req.URL,
                                                       kCFHTTPVersion1_1);
     NSDictionary* headers = req.allHTTPHeaderFields;
     for (NSString* header in headers) {
-        CFHTTPMessageSetHeaderFieldValue(msg, (__bridge CFStringRef)header,
-                                         (__bridge CFStringRef)headers[header]);
+        if (![kIgnoredHeaders member: header.lowercaseString]) {
+            CFHTTPMessageSetHeaderFieldValue(msg, (__bridge CFStringRef)header,
+                                                  (__bridge CFStringRef)headers[header]);
+        }
     }
     CFHTTPMessageSetBody(msg, (__bridge CFDataRef)req.HTTPBody);
 

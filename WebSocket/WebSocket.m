@@ -9,7 +9,6 @@
 #import "WebSocket.h"
 #import "WebSocket_Internal.h"
 #import "GCDAsyncSocket.h"
-#import "DDData.h"
 #import <Security/SecRandom.h>
 
 #if ! __has_feature(objc_arc)
@@ -44,10 +43,10 @@
 #define TIMEOUT_NONE          -1
 #define TIMEOUT_REQUEST_BODY  10
 
+// Tags for reads:
 //#define TAG_HTTP_REQUEST_BODY      100
-#define TAG_HTTP_RESPONSE_HEADERS  200
-#define TAG_HTTP_RESPONSE_BODY     201
-
+//#define TAG_HTTP_RESPONSE_HEADERS  200
+//#define TAG_HTTP_RESPONSE_BODY     201
 #define TAG_PREFIX                 300
 #define TAG_MSG_PLUS_SUFFIX        301
 #define TAG_MSG_WITH_LENGTH        302
@@ -57,14 +56,11 @@
 #define TAG_PAYLOAD_LENGTH16       306
 #define TAG_PAYLOAD_LENGTH64       307
 
-#define TAG_STOP                    400
+// Tags for writes:
+#define TAG_MESSAGE                 400
+#define TAG_STOP                    401
 
-#define WS_OP_CONTINUATION_FRAME   0
-#define WS_OP_TEXT_FRAME           1
-#define WS_OP_BINARY_FRAME         2
-#define WS_OP_CONNECTION_CLOSE     8
-#define WS_OP_PING                 9
-#define WS_OP_PONG                 10
+#define HUNGRY_SIZE 5
 
 static inline BOOL WS_OP_IS_FINAL_FRAGMENT(UInt8 frame) {
 	return (frame & 0x80) ? YES : NO;
@@ -101,10 +97,11 @@ static inline void maskBytes(NSMutableData* data, NSUInteger offset, NSUInteger 
 @implementation WebSocket
 {
 	BOOL _isRFC6455;
-//    BOOL _closing;
+    NSTimeInterval _timeout;
 	BOOL _nextFrameMasked;
 	NSData *_maskingKey;
 	NSUInteger _nextOpCode;
+    NSUInteger _writeQueueSize;
 }
 
 
@@ -112,7 +109,7 @@ static inline void maskBytes(NSMutableData* data, NSUInteger offset, NSUInteger 
 #pragma mark - Setup and Teardown
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-@synthesize websocketQueue=_websocketQueue, state=_state;
+@synthesize timeout=_timeout, websocketQueue=_websocketQueue, state=_state;
 
 static NSData* kTerminator;
 
@@ -125,6 +122,7 @@ static NSData* kTerminator;
 	HTTPLogTrace();
 
 	if ((self = [super init])) {
+        _timeout = TIMEOUT_DEFAULT;
         _state = kWebSocketUnopened;
 		_websocketQueue = dispatch_queue_create("WebSocket", NULL);
 		_isRFC6455 = YES;
@@ -235,10 +233,12 @@ static NSData* kTerminator;
 	// This method is invoked on the websocketQueue.
 	// 
 	// Don't forget to invoke [super didOpen] in your method.
+
+    self.state = kWebSocketOpen;
 	
 	// Start reading for messages
 	[_asyncSocket readDataToLength: 1
-                       withTimeout: TIMEOUT_NONE
+                       withTimeout: _timeout
                                tag: (_isRFC6455 ? TAG_PAYLOAD_PREFIX : TAG_PREFIX)];
 	// Notify delegate
 	if ([_delegate respondsToSelector:@selector(webSocketDidOpen:)]) {
@@ -263,22 +263,25 @@ static NSData* kTerminator;
 #pragma mark - SENDING MESSAGES:
 
 - (void)sendMessage:(NSString *)msg {
-    [self sendFrame: [msg dataUsingEncoding: NSUTF8StringEncoding] type: WS_OP_TEXT_FRAME tag: 0];
+    [self sendFrame: [msg dataUsingEncoding: NSUTF8StringEncoding]
+               type: WS_OP_TEXT_FRAME
+                tag: TAG_MESSAGE];
 }
 
 - (void)sendBinaryMessage:(NSData*)msg {
-    [self sendFrame: msg type: WS_OP_BINARY_FRAME tag: 0];
+    [self sendFrame: msg type: WS_OP_BINARY_FRAME tag: TAG_MESSAGE];
 }
 
 - (void) sendFrame: (NSData*)msgData type: (unsigned)type tag: (long)tag {
 	HTTPLogTrace();
 
-    if (_closing)
+    if (_state >= kWebSocketClosing)
         return;
 	
 	NSMutableData *data = nil;
 	
 	if (_isRFC6455) {
+        // Framing format: http://tools.ietf.org/html/rfc6455#section-5.2
         UInt8 header[14] = {(0x80 | type) /*, 0x00...*/};
         NSUInteger headerLen;
 
@@ -315,16 +318,34 @@ static NSData* kTerminator;
         }
 	} else {
 		data = [NSMutableData dataWithCapacity:([msgData length] + 2)];
-
 		[data appendBytes:"\x00" length:1];
 		[data appendData:msgData];
 		[data appendBytes:"\xFF" length:1];
 	}
 	
 	dispatch_async(_websocketQueue, ^{ @autoreleasepool {
-        if (!_closing)
-            [_asyncSocket writeData:data withTimeout:TIMEOUT_NONE tag: tag];
+        if (_state == kWebSocketOpen) {
+            if (tag == TAG_MESSAGE) {
+                _writeQueueSize += 1; // data.length would be better
+            }
+            [_asyncSocket writeData:data withTimeout:_timeout tag: tag];
+            if (tag == TAG_MESSAGE && _writeQueueSize <= HUNGRY_SIZE)
+                [self isHungry];
+        }
     }});
+}
+
+- (void) finishedSendingFrame {
+    _writeQueueSize -= 1; // data.length would be better but we don't know it anymore
+    if (_writeQueueSize <= HUNGRY_SIZE)
+        [self isHungry];
+}
+
+- (void) isHungry {
+	HTTPLogTrace();
+	// Notify delegate
+	if ([_delegate respondsToSelector:@selector(webSocketIsHungry:)])
+		[_delegate webSocketIsHungry:self];
 }
 
 #pragma mark - RECEIVING MESSAGES:
@@ -346,13 +367,13 @@ static NSData* kTerminator;
         case WS_OP_PONG:
             return YES;
         case WS_OP_CONNECTION_CLOSE:
-            if (_closing) {
+            if (_state >= kWebSocketClosing) {
                 // This is presumably an echo of the close frame I sent; time to stop:
                 [self disconnect];
             } else {
                 // Peer requested a close, so echo it and then stop:
                 [self sendFrame: frame type: WS_OP_CONNECTION_CLOSE tag: TAG_STOP];
-                _closing = YES;
+                self.state = kWebSocketClosing;
             }
             return NO;
         default:
@@ -427,7 +448,7 @@ static NSData* kTerminator;
 		UInt8 frame = *pFrame;
 		
 		if (frame <= 0x7F) {
-			[_asyncSocket readDataToData: kTerminator withTimeout:TIMEOUT_NONE tag:TAG_MSG_PLUS_SUFFIX];
+			[_asyncSocket readDataToData: kTerminator withTimeout:_timeout tag:TAG_MSG_PLUS_SUFFIX];
 		} else {
 			// Unsupported frame type
 			[self didCloseWithCode: kWebSocketCloseProtocolError
@@ -439,7 +460,7 @@ static NSData* kTerminator;
 
 		if ([self isValidWebSocketFrame: frame]) {
 			_nextOpCode = (frame & 0x0F);
-			[_asyncSocket readDataToLength:1 withTimeout:TIMEOUT_NONE tag:TAG_PAYLOAD_LENGTH];
+			[_asyncSocket readDataToLength:1 withTimeout:_timeout tag:TAG_PAYLOAD_LENGTH];
 		} else {
 			// Unsupported frame type
 			[self didCloseWithCode: kWebSocketCloseProtocolError
@@ -455,21 +476,21 @@ static NSData* kTerminator;
 		if (length <= 125) {
 			if (_nextFrameMasked)
 			{
-				[_asyncSocket readDataToLength:4 withTimeout:TIMEOUT_NONE tag:TAG_MSG_MASKING_KEY];
+				[_asyncSocket readDataToLength:4 withTimeout:_timeout tag:TAG_MSG_MASKING_KEY];
 			}
-			[_asyncSocket readDataToLength:length withTimeout:TIMEOUT_NONE tag:TAG_MSG_WITH_LENGTH];
+			[_asyncSocket readDataToLength:length withTimeout:_timeout tag:TAG_MSG_WITH_LENGTH];
 		} else if (length == 126) {
-			[_asyncSocket readDataToLength:2 withTimeout:TIMEOUT_NONE tag:TAG_PAYLOAD_LENGTH16];
+			[_asyncSocket readDataToLength:2 withTimeout:_timeout tag:TAG_PAYLOAD_LENGTH16];
 		} else {
-			[_asyncSocket readDataToLength:8 withTimeout:TIMEOUT_NONE tag:TAG_PAYLOAD_LENGTH64];
+			[_asyncSocket readDataToLength:8 withTimeout:_timeout tag:TAG_PAYLOAD_LENGTH64];
 		}
 	} else if (tag == TAG_PAYLOAD_LENGTH16) {
 		UInt8 *pFrame = (UInt8 *)[data bytes];
 		NSUInteger length = ((NSUInteger)pFrame[0] << 8) | (NSUInteger)pFrame[1];
 		if (_nextFrameMasked) {
-			[_asyncSocket readDataToLength:4 withTimeout:TIMEOUT_NONE tag:TAG_MSG_MASKING_KEY];
+			[_asyncSocket readDataToLength:4 withTimeout:_timeout tag:TAG_MSG_MASKING_KEY];
 		}
-		[_asyncSocket readDataToLength:length withTimeout:TIMEOUT_NONE tag:TAG_MSG_WITH_LENGTH];
+		[_asyncSocket readDataToLength:length withTimeout:_timeout tag:TAG_MSG_WITH_LENGTH];
 	} else if (tag == TAG_PAYLOAD_LENGTH64) {
 		// TODO: 64bit data size in memory?
         [self didCloseWithCode: kWebSocketClosePolicyError
@@ -483,7 +504,7 @@ static NSData* kTerminator;
 		}
         if ([self didReceiveFrame: data type: _nextOpCode]) {
             // Read next frame
-            [_asyncSocket readDataToLength:1 withTimeout:TIMEOUT_NONE tag:TAG_PAYLOAD_PREFIX];
+            [_asyncSocket readDataToLength:1 withTimeout:_timeout tag:TAG_PAYLOAD_PREFIX];
         }
 	} else if (tag == TAG_MSG_MASKING_KEY) {
 		_maskingKey = data.copy;
@@ -495,7 +516,7 @@ static NSData* kTerminator;
 		[self didReceiveMessage:msg];
 
 		// Read next message
-		[_asyncSocket readDataToLength:1 withTimeout:TIMEOUT_NONE tag:TAG_PREFIX];
+		[_asyncSocket readDataToLength:1 withTimeout:_timeout tag:TAG_PREFIX];
 	}
 }
 
@@ -503,6 +524,8 @@ static NSData* kTerminator;
 	HTTPLogTrace();
     if (tag == TAG_STOP) {
         [self disconnect];
+    } else if (tag == TAG_MESSAGE) {
+        [self finishedSendingFrame];
     }
 }
 

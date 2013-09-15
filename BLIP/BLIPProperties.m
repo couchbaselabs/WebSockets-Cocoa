@@ -9,20 +9,28 @@
 #import "BLIPProperties.h"
 #import "Logging.h"
 #import "Test.h"
+#import "MYData.h"
 
 
 /** Common strings are abbreviated as single-byte strings in the packed form.
     The ascii value of the single character minus one is the index into this table. */
 static const char* kAbbreviations[] = {
-    "Content-Type",
     "Profile",
+    "Error-Code",
+    "Error-Domain",
+
+    "Content-Type",
+    "application/json",
     "application/octet-stream",
     "text/plain; charset=UTF-8",
     "text/xml",
-    "text/yaml",
-    "Channel",
-    "Error-Code",
-    "Error-Domain",
+
+    "Accept",
+    "Cache-Control",
+    "must-revalidate",
+    "If-Match",
+    "If-None-Match",
+    "Location",
 };
 #define kNAbbreviations ((sizeof(kAbbreviations)/sizeof(const char*)))  // cannot exceed 31!
 
@@ -37,7 +45,7 @@ static const char* kAbbreviations[] = {
     int _nStrings;
 }
 
-- (id) initWithBytes: (const char*)bytes length: (size_t)length;
+- (id) initWithData: (NSData*)data contents: (MYSlice)contents;
 
 @end
 
@@ -49,31 +57,27 @@ static const char* kAbbreviations[] = {
 
 + (BLIPProperties*) propertiesWithEncodedData: (NSData*)data usedLength: (ssize_t*)usedLength
 {
-    size_t available = data.length;
-    if( available < sizeof(UInt16) ) {
-        // Not enough available to read length:
+    MYSlice slice = data.my_asSlice;
+    UInt64 length;
+    MYSlice props;
+    if (!MYSliceReadVarUInt(&slice, &length) || !MYSliceReadSlice(&slice, (size_t)length, &props)) {
         *usedLength = 0;
         return nil;
     }
-    
-    // Read the length:
-    const char *bytes = data.bytes;
-    size_t length = NSSwapBigShortToHost( *(UInt16*)bytes ) + sizeof(UInt16);
-    if( length > available ) {
-        // Properties not complete yet.
-        *usedLength = 0;
-        return nil;
+
+    *usedLength = slice.bytes - data.bytes;
+
+    if (length == 0) {
+        return [BLIPProperties properties];
     }
-    
-    // Complete -- try to create an object:
-    BLIPProperties *props;
-    if( length > sizeof(UInt16) )
-        props = [[BLIPPackedProperties alloc] initWithBytes: bytes length: length];
-    else
-        props = [BLIPProperties properties];
-    
-    *usedLength = props ?(ssize_t)length :-1;
-    return props;
+
+    // Copy the data (length + properties) and make a slice of just the properties part:
+    size_t lengthSize = props.bytes - data.bytes;
+    data = [data subdataWithRange: NSMakeRange(0, *usedLength)];
+    slice = data.my_asSlice;
+    MYSliceMoveStart(&slice, lengthSize);
+
+    return [[BLIPPackedProperties alloc] initWithData: data contents: slice];
 }
 
 
@@ -97,20 +101,24 @@ static const char* kAbbreviations[] = {
 - (NSString*)objectForKeyedSubscript:(NSString*)key {return nil;}
 - (NSDictionary*) allProperties                 {return @{};}
 - (NSUInteger) count                            {return 0;}
-- (NSUInteger) dataLength                       {return sizeof(UInt16);}
+- (NSUInteger) dataLength                       {return 1;}
 
 - (NSData*) encodedData
 {
-    UInt16 len = 0;
-    return [NSData dataWithBytes: &len length: sizeof(len)];
+    // varint-encoded zero:
+    UInt8 len = 0;
+    return [NSData dataWithBytes: &len length: 1];
 }
 
 
+// Singleton empty instance
 + (BLIPProperties*) properties
 {
     static BLIPProperties *sEmptyInstance;
-    if( ! sEmptyInstance )
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
         sEmptyInstance = [[self alloc] init];
+    });
     return sEmptyInstance;
 }
 
@@ -123,22 +131,19 @@ static const char* kAbbreviations[] = {
 @implementation BLIPPackedProperties
 
 
-- (id) initWithBytes: (const char*)bytes length: (size_t)length
-{
+- (id) initWithData: (NSData*)data contents: (MYSlice)contents {
     self = [super init];
     if (self != nil) {
-        // Copy data, then skip the length field:
-        _data = [[NSData alloc] initWithBytes: bytes length: length];
-        bytes = (const char*)_data.bytes + sizeof(UInt16);
-        length -= sizeof(UInt16);
-        
-        if( bytes[length-1]!='\0' )
+        if (contents.length == 0 || ((const char*)contents.bytes)[contents.length-1] != '\0')
             goto fail;
+
+        // Copy data, then skip the length field:
+        _data = data;
 
         // The data consists of consecutive NUL-terminated strings, alternating key/value:
         int capacity = 0;
-        const char *end = bytes+length;
-        for( const char *str=bytes; str < end; str += strlen(str)+1, _nStrings++ ) {
+        const char *end = MYSliceGetEnd(contents);
+        for( const char *str=contents.bytes; str < end; str += strlen(str)+1, _nStrings++ ) {
             if( _nStrings >= capacity ) {
                 capacity = capacity ?(2*capacity) :4;
                 _strings = realloc(_strings, capacity*sizeof(const char*));
@@ -302,17 +307,19 @@ static void appendStr( NSMutableData *data, NSString *str ) {
 
 - (NSData*) encodedData
 {
+    static const int kPlaceholderLength = 1; // space to reserve for varint length
     NSMutableData *data = [NSMutableData dataWithCapacity: 16*_properties.count];
-    [data setLength: sizeof(UInt16)]; // leave room for length
+    [data setLength: kPlaceholderLength];
     for( NSString *name in _properties ) {
         appendStr(data,name);
         appendStr(data,_properties[name]);
     }
     
-    NSUInteger length = data.length - sizeof(UInt16);
-    if( length > 0xFFFF )
-        return nil;
-    *(UInt16*)[data mutableBytes] = NSSwapHostShortToBig((UInt16)length);
+    NSUInteger length = data.length - kPlaceholderLength;
+
+    UInt8 buf[10];
+    UInt8* end = MYEncodeVarUInt(buf, length);
+    [data replaceBytesInRange: NSMakeRange(0, kPlaceholderLength) withBytes: buf length: end-buf];
     return data;
 }
 
@@ -360,16 +367,17 @@ TestCase(BLIPProperties) {
     Log(@"Empty properties:\n%@", props.allProperties);
     NSData *data = props.encodedData;
     Log(@"As data: %@", data);
-    CAssertEqual(data,[NSMutableData dataWithLength: 2]);
+    CAssertEqual(data,[NSMutableData dataWithLength: 1]);
     
     BLIPMutableProperties *mprops = [props mutableCopy];
     Log(@"Mutable copy:\n%@", mprops.allProperties);
     data = mprops.encodedData;
     Log(@"As data: %@", data);
-    CAssertEqual(data,[NSMutableData dataWithLength: 2]);
+    CAssertEqual(data,[NSMutableData dataWithLength: 1]);
     
     ssize_t used;
     props = [BLIPProperties propertiesWithEncodedData: data usedLength: &used];
+    CAssert(props != nil);
     CAssertEq(used,(ssize_t)data.length);
     CAssertEqual(props,mprops);
     

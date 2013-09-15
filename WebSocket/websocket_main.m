@@ -27,7 +27,7 @@
         _webSocket = [[WebSocketClient alloc] initWithURL: url];
         _webSocket.delegate = self;
         NSError* error;
-        if (![_webSocket connectWithTimeout: 5.0 error: &error]) {
+        if (![_webSocket connect: &error]) {
             NSLog(@"Failed to connect: %@", error);
             exit(1);
         }
@@ -50,13 +50,15 @@
     [_webSocket close];
 }
 
-- (void)webSocketDidClose:(WebSocket *)ws {
-    NSLog(@"webSocketDidClose");
+- (void)webSocket:(WebSocket *)ws didReceiveBinaryMessage:(NSData *)msg {
+    NSLog(@"Received message: %@", msg);
+    [_webSocket close];
 }
 
-- (void)webSocketDidFail: (NSString*)reason {
-    NSLog(@"webSocketDidFail: %@", reason);
+- (void)webSocket:(WebSocket *)ws didCloseWithCode: (WebSocketCloseCode)code reason: (NSString*)reason {
+    NSLog(@"webSocketDidClose: %d, %@", (int)code, reason);
 }
+
 
 @end
 

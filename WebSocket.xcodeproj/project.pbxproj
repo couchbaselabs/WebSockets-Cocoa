@@ -32,6 +32,7 @@
 		2759310E17E0C8540078880F /* WebSocket.m in Sources */ = {isa = PBXBuildFile; fileRef = 27A20E3717DF8E0700F83C71 /* WebSocket.m */; };
 		2759311117E0CF7A0078880F /* blip_main.m in Sources */ = {isa = PBXBuildFile; fileRef = 2759310F17E0CA850078880F /* blip_main.m */; };
 		2790125E17E210EB0056E125 /* DDData.m in Sources */ = {isa = PBXBuildFile; fileRef = 27A20E4E17DFC66800F83C71 /* DDData.m */; };
+		2790126217E4008D0056E125 /* MYData.m in Sources */ = {isa = PBXBuildFile; fileRef = 2790126117E4008D0056E125 /* MYData.m */; };
 		27A20E2617DF8DAB00F83C71 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27A20E2517DF8DAB00F83C71 /* Foundation.framework */; };
 		27A20E2917DF8DAB00F83C71 /* websocket_main.m in Sources */ = {isa = PBXBuildFile; fileRef = 27A20E2817DF8DAB00F83C71 /* websocket_main.m */; };
 		27A20E3B17DF8E0700F83C71 /* WebSocketClient.m in Sources */ = {isa = PBXBuildFile; fileRef = 27A20E3917DF8E0700F83C71 /* WebSocketClient.m */; };
@@ -89,6 +90,8 @@
 		2759310F17E0CA850078880F /* blip_main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = blip_main.m; sourceTree = "<group>"; };
 		2790125D17E20B270056E125 /* BLIP.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = BLIP.h; sourceTree = "<group>"; };
 		2790125F17E229EF0056E125 /* blip_echo.go */ = {isa = PBXFileReference; lastKnownFileType = text; path = blip_echo.go; sourceTree = "<group>"; };
+		2790126017E4008D0056E125 /* MYData.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MYData.h; sourceTree = "<group>"; };
+		2790126117E4008D0056E125 /* MYData.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MYData.m; sourceTree = "<group>"; };
 		27A20E2217DF8DAB00F83C71 /* WebSocket */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = WebSocket; sourceTree = BUILT_PRODUCTS_DIR; };
 		27A20E2517DF8DAB00F83C71 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		27A20E2817DF8DAB00F83C71 /* websocket_main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = websocket_main.m; path = WebSocket/websocket_main.m; sourceTree = "<group>"; };
@@ -156,8 +159,6 @@
 				275930E417E0B4C50078880F /* BLIP_Internal.h */,
 				275930CC17E0B3FD0078880F /* BLIPDispatcher.h */,
 				275930CD17E0B3FD0078880F /* BLIPDispatcher.m */,
-				275930CE17E0B3FD0078880F /* BLIPHTTPProtocol.h */,
-				275930CF17E0B3FD0078880F /* BLIPHTTPProtocol.m */,
 				275930DB17E0B4660078880F /* BLIPMessage.h */,
 				275930DC17E0B4660078880F /* BLIPMessage.m */,
 				275930D017E0B3FD0078880F /* BLIPProperties.h */,
@@ -166,6 +167,8 @@
 				275930D317E0B3FD0078880F /* BLIPRequest.m */,
 				275930DE17E0B4910078880F /* BLIPRequest+HTTP.h */,
 				275930DF17E0B4910078880F /* BLIPRequest+HTTP.m */,
+				275930CE17E0B3FD0078880F /* BLIPHTTPProtocol.h */,
+				275930CF17E0B3FD0078880F /* BLIPHTTPProtocol.m */,
 			);
 			path = BLIP;
 			sourceTree = "<group>";
@@ -249,16 +252,18 @@
 		27BEF2AC17DFD76600BA6567 /* MYUtilities */ = {
 			isa = PBXGroup;
 			children = (
+				27BEF2AD17DFD78900BA6567 /* CollectionUtils.h */,
+				27BEF2AE17DFD78900BA6567 /* CollectionUtils.m */,
 				275930EB17E0B8000078880F /* ExceptionUtils.h */,
 				275930EC17E0B8000078880F /* ExceptionUtils.m */,
 				275930E817E0B5960078880F /* GTMNSData+zlib.h */,
 				275930E917E0B5960078880F /* GTMNSData+zlib.m */,
-				275930E117E0B4A90078880F /* Target.h */,
-				275930E217E0B4A90078880F /* Target.m */,
-				27BEF2AD17DFD78900BA6567 /* CollectionUtils.h */,
-				27BEF2AE17DFD78900BA6567 /* CollectionUtils.m */,
 				27BEF2AF17DFD78900BA6567 /* Logging.h */,
 				27BEF2B017DFD78900BA6567 /* Logging.m */,
+				2790126017E4008D0056E125 /* MYData.h */,
+				2790126117E4008D0056E125 /* MYData.m */,
+				275930E117E0B4A90078880F /* Target.h */,
+				275930E217E0B4A90078880F /* Target.m */,
 				27BEF2B117DFD78A00BA6567 /* Test.h */,
 				27BEF2B217DFD78A00BA6567 /* Test.m */,
 			);
@@ -343,6 +348,7 @@
 				275930FC17E0C8050078880F /* BLIPProperties.m in Sources */,
 				275930FB17E0C8050078880F /* WebSocket.m in Sources */,
 				275930F417E0C8050078880F /* WebSocketClient.m in Sources */,
+				2790126217E4008D0056E125 /* MYData.m in Sources */,
 				275930F317E0C8050078880F /* GCDAsyncSocket.m in Sources */,
 				275930FA17E0C8050078880F /* DDData.m in Sources */,
 				275930FE17E0C8050078880F /* CollectionUtils.m in Sources */,

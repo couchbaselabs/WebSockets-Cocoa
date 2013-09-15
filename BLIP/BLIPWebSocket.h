@@ -18,12 +18,15 @@
 - (id)initWithURLRequest:(NSURLRequest *)request;
 - (id)initWithURL:(NSURL *)url;
 
-@property (nonatomic, weak) id<BLIPWebSocketDelegate> delegate;
+- (void) setDelegate: (id<BLIPWebSocketDelegate>)delegate
+               queue: (dispatch_queue_t)delegateQueue;
 
 @property (readonly) WebSocket* webSocket;
 
 - (BOOL)open;
 - (void)close;
+- (void)closeWithCode:(NSInteger)code reason:(NSString *)reason;
+
 
 /** Creates a new, empty outgoing request.
     You should add properties and/or body data to the request, before sending it by
@@ -59,7 +62,7 @@
 
 - (void)blipWebSocket: (BLIPWebSocket*)webSocket
      didCloseWithCode: (WebSocketCloseCode)code
-               reason:(NSString *)reason;
+               reason:( NSString *)reason;
 
 /** Called when a BLIPRequest is received from the peer, if there is no BLIPDispatcher
     rule to handle it.

@@ -52,20 +52,19 @@ typedef enum WebSocketCloseCode WebSocketCloseCode;
 
 @property (weak) id<WebSocketDelegate> delegate;
 
+@property NSTimeInterval timeout;
+
 /** The WebSocket class is thread-safe, generally via its GCD queue.
     All public API methods are thread-safe,
     and the subclass API methods are thread-safe as they are all invoked on the same GCD queue. */
 @property (nonatomic, readonly) dispatch_queue_t websocketQueue;
 
+/** Status of the connection (unopened, opening, ...) */
 @property (readonly) WebSocketState state;
 
 /** Begins an orderly shutdown of the WebSocket connection. */
 - (void) close;
 - (void) closeWithCode:(WebSocketCloseCode)code reason:(NSString *)reason;
-
-@property (readonly) NSError* error;
-
-@property (readonly) BOOL closing;
 
 /** Abrupt socket disconnection. Normally you should call -close instead. */
 - (void)disconnect;
@@ -77,10 +76,24 @@ typedef enum WebSocketCloseCode WebSocketCloseCode;
 - (void)sendBinaryMessage:(NSData*)msg;
 
 
+///////////////////////////////////////////////////////////////////////////////////////////////////
+#pragma mark - OVERRIDEABLE METHODS
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+// These correspond to the delegate methods.
+// Subclasses can override them, but should call through to the superclass method.
+
+- (void) didOpen;
+- (void) didReceiveMessage:(NSString *)msg;
+- (void) didReceiveBinaryMessage:(NSData *)msg;
+- (void) isHungry;
+- (void) didCloseWithCode: (WebSocketCloseCode)code reason: (NSString*)reason;
+
+
 @end
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-#pragma mark -
+#pragma mark - DELEGATE API
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 /** Delegate API for WebSocket and its subclasses. */
@@ -92,6 +105,8 @@ typedef enum WebSocketCloseCode WebSocketCloseCode;
 - (void)webSocket:(WebSocket *)ws didReceiveMessage:(NSString *)msg;
 
 - (void)webSocket:(WebSocket *)ws didReceiveBinaryMessage:(NSData *)msg;
+
+- (void)webSocketIsHungry:(WebSocket *)ws;
 
 - (void)webSocket:(WebSocket *)ws didCloseWithCode: (WebSocketCloseCode)code reason: (NSString*)reason;
 

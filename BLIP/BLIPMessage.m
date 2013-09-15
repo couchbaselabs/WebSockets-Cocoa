@@ -13,6 +13,7 @@
 #import "Test.h"
 #import "ExceptionUtils.h"
 #import "Target.h"
+#import "MYData.h"
 
 // From Google Toolbox For Mac <http://code.google.com/p/google-toolbox-for-mac/>
 #import "GTMNSData+zlib.h"
@@ -267,18 +268,12 @@ NSError *BLIPMakeError( int errorCode, NSString *message, ... )
         LogTo(BLIPVerbose,@"%@ pushing frame, bytes %lu-%lu (finished)", self, (long)_bytesWritten, _bytesWritten+lengthToWrite);
     }
 
-    NSMutableData* frame = [NSMutableData dataWithLength: kBLIPWebSocketFrameHeaderSize + lengthToWrite];
-    BLIPWebSocketFrameHeader* header = frame.mutableBytes;
-    header->number = NSSwapHostIntToBig(_number);
-    header->flags = NSSwapHostShortToBig(flags);
+    NSMutableData* frame = [NSMutableData dataWithCapacity: kBLIPWebSocketFrameHeaderSize + lengthToWrite];
+    [frame my_appendVarUInt: _number];
+    [frame my_appendVarUInt: flags];
+    [frame appendBytes: (UInt8*)_encodedBody.bytes + _bytesWritten length: lengthToWrite];
+    _bytesWritten += lengthToWrite;
 
-    // Then write the body:
-    if( lengthToWrite > 0 ) {
-        memcpy((char*)frame.mutableBytes + kBLIPWebSocketFrameHeaderSize,
-               (UInt8*)_encodedBody.bytes + _bytesWritten,
-               lengthToWrite);
-        _bytesWritten += lengthToWrite;
-    }
     *outMoreComing = (flags & kBLIP_MoreComing) != 0;
     return frame;
 }

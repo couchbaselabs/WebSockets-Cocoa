@@ -1,12 +1,32 @@
 package main
 
 import (
+	"bytes"
+	"encoding/binary"
 	"fmt"
 	"log"
 	"net/http"
 
+	"code.google.com/p/go.net/websocket"
 	"github.com/snej/go-blip"
 )
+
+const Logging = true
+
+func main() {
+	http.Handle("/dump", NewWebSocketHandler(DumpHandler))
+	http.Handle("/dump-blip", NewWebSocketHandler(DumpBLIPHandler))
+	http.Handle("/echo", NewWebSocketHandler(EchoHandler))
+
+	context := blip.NewContext()
+	context.LogFrames = Logging
+	context.HandlerForProfile["BLIPTest/EchoData"] = dispatchEcho
+	http.Handle("/blip", context.HTTPHandler())
+	log.Printf("Listening on :12345/blip ...")
+	if err := http.ListenAndServe(":12345", nil); err != nil {
+		panic("ListenAndServe: " + err.Error())
+	}
+}
 
 func dispatchEcho(request *blip.Message) {
 	body, err := request.Body()
@@ -14,23 +34,61 @@ func dispatchEcho(request *blip.Message) {
 		log.Printf("ERROR reading body of %s: %s", request, err)
 		return
 	}
-	log.Printf("Got request, properties = %v", request.Properties)
-	DumpByteArray(body)
+	if Logging {
+		log.Printf("Got request, properties = %v", request.Properties)
+		DumpByteArray(body)
+	}
 	if response := request.Response(); response != nil {
 		response.SetBody(body)
 		response.Properties["Content-Type"] = request.Properties["Content-Type"]
 	}
 }
 
-func main() {
-	context := blip.NewContext()
-	context.LogFrames = true
-	context.HandlerForProfile["BLIPTest/EchoData"] = dispatchEcho
-	http.Handle("/blip", context.HTTPHandler())
-	log.Printf("Listening on :12345/blip ...")
-	if err := http.ListenAndServe(":12345", nil); err != nil {
-		panic("ListenAndServe: " + err.Error())
+// Dump structure of a BLIP frame
+func DumpBLIPHandler(frame []byte) []byte {
+	reader := bytes.NewReader(frame)
+	var sequence uint32
+	var flags uint16
+	binary.Read(reader, binary.BigEndian, &sequence)
+	binary.Read(reader, binary.BigEndian, &flags)
+	log.Printf("Frame #%4d  flags = %016b", sequence, flags)
+	DumpByteArray(frame[6:])
+	return nil
+}
+
+// Echo the data received on the WebSocket.
+func DumpHandler(frame []byte) []byte {
+	DumpByteArray(frame)
+	return nil
+}
+
+// Echo the data received on the WebSocket.
+func EchoHandler(frame []byte) []byte {
+	log.Printf("Read frame: %q", frame)
+	return frame
+}
+
+// Echo the data received on the WebSocket.
+func NewWebSocketHandler(fn func([]byte) []byte) http.Handler {
+	var server websocket.Server
+	server.Handler = func(ws *websocket.Conn) {
+		log.Printf("--- Received connection")
+		buffer := make([]byte, 8000)
+		var err error
+		for {
+			var nBytes int
+			nBytes, err = ws.Read(buffer)
+			if err != nil {
+				break
+			}
+			frame := buffer[:nBytes]
+			if response := fn(frame); response != nil {
+				ws.Write(response)
+			}
+		}
+		log.Printf("--- End connection (%v)", err)
 	}
+	return server
 }
 
 func DumpByteArray(frame []byte) {

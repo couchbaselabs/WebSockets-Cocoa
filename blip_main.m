@@ -11,6 +11,12 @@
 #import "WebSocketClient.h"
 
 #import "CollectionUtils.h"
+#import "Logging.h"
+#import "Test.h"
+
+
+#define kSendInterval 1.0
+#define kBodySize 50
 
 
 @interface BLIPTest : NSObject <BLIPWebSocketDelegate>
@@ -22,20 +28,20 @@
 @implementation BLIPTest
 {
     BLIPWebSocket* _webSocket;
+    UInt64 _count;
+    CFAbsoluteTime _startTime;
 }
 
 - (id) initWithURL: (NSURL*)url {
     self = [super init];
     if (self) {
         _webSocket = [[BLIPWebSocket alloc] initWithURL: url];
-        _webSocket.delegate = self;
-        [(WebSocketClient*)_webSocket.webSocket setValue: @"http://localhost" //TEMP
-                                    forClientHeaderField: @"Origin"];
+        [_webSocket setDelegate: self queue: NULL]; // use current queue
         if (![_webSocket open]) {
-            NSLog(@"Failed to connect: %@", _webSocket.error);
+            Warn(@"Failed to connect: %@", _webSocket.error);
             exit(1);
         }
-        NSLog(@"Connecting...");
+        Log(@"Connecting...");
     }
     return self;
 }
@@ -44,32 +50,59 @@
     [_webSocket close];
 }
 
-- (void)blipWebSocketDidOpen:(BLIPWebSocket*)webSocket {
-    NSLog(@"webSocketDidOpen!");
-    BLIPRequest* req = [BLIPRequest requestWithBodyString: @"Hello, World!"];
+- (void) send {
+    if (_startTime == 0)
+        _startTime = CFAbsoluteTimeGetCurrent();
+    Log(@"SEND");
+
+    NSMutableData* body = [NSMutableData dataWithLength: kBodySize];
+    char* bytes = body.mutableBytes;
+    for (NSUInteger i = 0; i < kBodySize; ++i)
+        bytes[i] = 'A' + ((i + _count) % 26);
+
+    BLIPRequest* req = [BLIPRequest requestWithBody: body];
     req.profile = @"BLIPTest/EchoData";
     [_webSocket sendRequest: req];
 }
 
+- (void)blipWebSocketDidOpen:(BLIPWebSocket*)webSocket {
+    Log(@"webSocketDidOpen!");
+    [self send];
+}
+
 - (BOOL) blipWebSocket: (BLIPWebSocket*)webSocket receivedRequest: (BLIPRequest*)request {
-    NSLog(@"Received request: %@", request);
+    Log(@"Received request: %@", request);
     return NO;
 }
 
 - (void) blipWebSocket: (BLIPWebSocket*)webSocket receivedResponse: (BLIPResponse*)response {
     NSString* body = [response.body my_UTF8ToString];
-    NSLog(@"Received response: %@ -- \"%@\"", response, body);
+    ++_count;
+    Log(@"Received response: %@ -- \"%@\"", response, body);
+    if (_count % 1000 == 0) {
+        NSTimeInterval elapsed = CFAbsoluteTimeGetCurrent() - _startTime;
+        NSLog(@"Send %llu round-trips in %.3f sec -- %.0f/sec (%.0fMB/sec)",
+              _count, elapsed, _count/elapsed, _count/elapsed*kBodySize*2/1e6);
+    }
+
+    if (kSendInterval > 0) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self performSelector: @selector(send) withObject: nil afterDelay: kSendInterval];
+        });
+    } else {
+        [self send];
+    }
 }
 
 - (void)blipWebSocket: (BLIPWebSocket*)webSocket didFailWithError:(NSError *)error {
-    NSLog(@"webSocketDidFail: %@", error);
+    Warn(@"webSocketDidFail: %@", error);
 }
 
 - (void)blipWebSocket: (BLIPWebSocket*)webSocket
      didCloseWithCode:(WebSocketCloseCode)code
                reason:(NSString *)reason
 {
-    NSLog(@"Closed with code %d: \"%@\"", (int)code, reason);
+    Log(@"Closed with code %d: \"%@\"", (int)code, reason);
 }
 
 @end
@@ -78,6 +111,7 @@
 
 int main(int argc, const char * argv[])
 {
+    RunTestCases(argc, argv);
 
     @autoreleasepool {
 

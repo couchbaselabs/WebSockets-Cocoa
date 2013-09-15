@@ -15,6 +15,7 @@
 #import "ExceptionUtils.h"
 #import "Logging.h"
 #import "Test.h"
+#import "MYData.h"
 
 
 #define kDefaultFrameSize 4096
@@ -28,9 +29,11 @@
 @implementation BLIPWebSocket
 {
     WebSocket* _webSocket;
+    dispatch_queue_t _websocketQueue;
     bool _webSocketIsOpen;
     NSError* _error;
     __weak id<BLIPWebSocketDelegate> _delegate;
+    dispatch_queue_t _delegateQueue;
     
     NSMutableArray *_outBox;
     UInt32 _numRequestsSent;
@@ -42,10 +45,7 @@
 }
 
 
-@synthesize delegate=_delegate;
-
-
-// Designated initializer
+// Public API; Designated initializer
 - (id)initWithWebSocket: (WebSocket*)webSocket {
     Assert(webSocket);
     self = [super init];
@@ -53,19 +53,43 @@
         if (!webSocket)
             return nil;
         _webSocket = webSocket;
+        _websocketQueue = webSocket.websocketQueue;
         _webSocket.delegate = self;
+        _delegateQueue = dispatch_get_main_queue();
         _pendingRequests = [[NSMutableDictionary alloc] init];
         _pendingResponses = [[NSMutableDictionary alloc] init];
     }
     return self;
 }
 
+// Public API
 - (id)initWithURLRequest:(NSURLRequest *)request {
     return [self initWithWebSocket: [[WebSocketClient alloc] initWithURLRequest: request]];
 }
 
+// Public API
 - (id)initWithURL:(NSURL *)url {
     return [self initWithWebSocket: [[WebSocketClient alloc] initWithURL: url]];
+}
+
+
+// Public API
+- (void) setDelegate: (id<BLIPWebSocketDelegate>)delegate
+               queue: (dispatch_queue_t)delegateQueue
+{
+    Assert(!_delegate, @"Don't change the delegate");
+    _delegate = delegate;
+    _delegateQueue = delegateQueue ?: dispatch_get_main_queue();
+}
+
+
+- (void) _callDelegate: (SEL)selector block: (void(^)(id<BLIPWebSocketDelegate>))block {
+    id<BLIPWebSocketDelegate> delegate = _delegate;
+    if (_delegate && [_delegate respondsToSelector: selector]) {
+        dispatch_async(_delegateQueue, ^{
+            block(delegate);
+        });
+    }
 }
 
 
@@ -75,9 +99,10 @@
 #pragma mark - OPEN/CLOSE:
 
 
+// Public API
 - (BOOL) open {
     NSError* error;
-    if (![(WebSocketClient*)_webSocket connectWithTimeout: -1 error: &error]) {
+    if (![(WebSocketClient*)_webSocket connect: &error]) {
         self.error = error;
         return NO;
     }
@@ -85,10 +110,12 @@
 }
 
 
+// Public API
 - (void)close {
     [_webSocket close];
 }
 
+// Public API
 - (void)closeWithCode:(NSInteger)code reason:(NSString *)reason {
     [_webSocket closeWithCode: code reason: reason];
 }
@@ -99,51 +126,62 @@
 }
 
 
+// WebSocket delegate method
 - (void)webSocketDidOpen:(WebSocket *)webSocket {
     LogTo(BLIP, @"%@ is open!", self);
     _webSocketIsOpen = true;
-    if ([_delegate respondsToSelector: @selector(blipWebSocketDidOpen:)])
-        [_delegate blipWebSocketDidOpen: self];
     if (_outBox.count > 0)
-        [self webSocketReadyForData: _webSocket];
+        [self webSocketIsHungry: _webSocket]; // kick the queue to start sending
+
+    [self _callDelegate: @selector(blipWebSocketDidOpen:)
+                 block: ^(id<BLIPWebSocketDelegate> delegate) {
+        [delegate blipWebSocketDidOpen: self];
+    }];
 }
 
 
+// WebSocket delegate method
 - (void)webSocket:(WebSocket *)webSocket didFailWithError:(NSError *)error {
     LogTo(BLIP, @"%@ closed with error %@", self, error);
     if (error && !_error)
         self.error = error;
-    if ([_delegate respondsToSelector: @selector(blipWebSocket:didFailWithError:)])
-        [_delegate blipWebSocket: self didFailWithError: error];
+    [self _callDelegate: @selector(blipWebSocket:didFailWithError:)
+                  block: ^(id<BLIPWebSocketDelegate> delegate) {
+        [delegate blipWebSocket: self didFailWithError: error];
+    }];
 }
 
 
+// WebSocket delegate method
 - (void)webSocket:(WebSocket *)webSocket
  didCloseWithCode:(WebSocketCloseCode)code
            reason:(NSString *)reason
 {
     LogTo(BLIP, @"%@ closed with code %d", self, (int)code);
-    if ([_delegate respondsToSelector: @selector(blipWebSocket:didCloseWithCode:reason:)])
-        [_delegate blipWebSocket: self didCloseWithCode: code reason: reason];
+    [self _callDelegate: @selector(blipWebSocket:didCloseWithCode:reason:)
+                  block: ^(id<BLIPWebSocketDelegate> delegate) {
+            [delegate blipWebSocket: self didCloseWithCode: code reason: reason];
+    }];
 }
 
 
 #pragma mark - SENDING:
 
 
-- (BLIPRequest*) request
-{
+// Public API
+- (BLIPRequest*) request {
     return [[BLIPRequest alloc] _initWithConnection: self body: nil properties: nil];
 }
 
+// Public API
 - (BLIPRequest*) requestWithBody: (NSData*)body
                       properties: (NSDictionary*)properties
 {
     return [[BLIPRequest alloc] _initWithConnection: self body: body properties: properties];
 }
 
-- (BLIPResponse*) sendRequest: (BLIPRequest*)request
-{
+// Public API
+- (BLIPResponse*) sendRequest: (BLIPRequest*)request {
     if (!request.isMine || request.sent) {
         // This was an incoming request that I'm being asked to forward or echo;
         // or it's an outgoing request being sent to multiple connections.
@@ -159,8 +197,7 @@
 }
 
 
-- (void) _queueMessage: (BLIPMessage*)msg isNew: (BOOL)isNew
-{
+- (void) _queueMessage: (BLIPMessage*)msg isNew: (BOOL)isNew {
     NSInteger n = _outBox.count, index;
     if( msg.urgent && n > 1 ) {
         // High-priority gets queued after the last existing high-priority message,
@@ -189,40 +226,45 @@
     if( isNew ) {
         LogTo(BLIP,@"%@ queuing outgoing %@ at index %li",self,msg,(long)index);
         if( n==0 && _webSocketIsOpen )
-            [self webSocketReadyForData: _webSocket];  // queue the first message now
+            [self webSocketIsHungry: _webSocket];  // queue the first message now
     }
 }
 
 
-- (BOOL) _sendMessage: (BLIPMessage*)message
-{
-    Assert(!message.sent,@"message has already been sent");
-    [self _queueMessage: message isNew: YES];
+// BLIPMessageSender protocol: Called from -[BLIPRequest send]
+- (BOOL) _sendRequest: (BLIPRequest*)q response: (BLIPResponse*)response {
+    Assert(!q.sent,@"message has already been sent");
+    __block BOOL result;
+    dispatch_sync(_websocketQueue, ^{
+        if( _webSocketIsOpen && _webSocket.state >= kWebSocketClosing ) {
+            Warn(@"%@: Attempt to send a request after the connection has started closing: %@",self,q);
+            result = NO;
+            return;
+        }
+        [q _assignedNumber: ++_numRequestsSent];
+        if( response ) {
+            [response _assignedNumber: _numRequestsSent];
+            [self _addPendingResponse: response];
+        }
+        [self _queueMessage: q isNew: YES];
+        result = YES;
+    });
+    return result;
+}
+
+// BLIPMessageSender protocol: Called from -[BLIPResponse send]
+- (BOOL) _sendResponse: (BLIPResponse*)response {
+    Assert(!response.sent,@"message has already been sent");
+    dispatch_async(_websocketQueue, ^{
+        [self _queueMessage: response isNew: YES];
+    });
     return YES;
 }
 
 
-- (BOOL) _sendRequest: (BLIPRequest*)q response: (BLIPResponse*)response
-{
-    if( _webSocketIsOpen && _webSocket.state >= kWebSocketClosing ) {
-        Warn(@"%@: Attempt to send a request after the connection has started closing: %@",self,q);
-        return NO;
-    }
-    [q _assignedNumber: ++_numRequestsSent];
-    if( response ) {
-        [response _assignedNumber: _numRequestsSent];
-        [self _addPendingResponse: response];
-    }
-    return [self _sendMessage: q];
-}
-
-
-- (BOOL) _sendResponse: (BLIPResponse*)response {
-    return [self _sendMessage: response];
-}
-
-
-- (void) webSocketReadyForData:(WebSocket *)webSocket {
+// WebSocket delegate method
+// Pull a frame from the outBox queue and send it to the WebSocket:
+- (void)webSocketIsHungry:(WebSocket *)ws {
     if( _outBox.count > 0 ) {
         // Pop first message in queue:
         BLIPMessage *msg = _outBox[0];
@@ -237,9 +279,12 @@
         BOOL moreComing;
         NSData* frame = [msg nextWebSocketFrameWithMaxSize: frameSize moreComing: &moreComing];
         LogTo(BLIPVerbose,@"%@: Sending frame of %@",self, msg);
+
+        // SHAZAM! Send the frame to the WebSocket:
         [_webSocket sendBinaryMessage: frame];
+
         if (moreComing) {
-            // add it back so it can send its next frame later:
+            // add the message back so it can send its next frame later:
             [self _queueMessage: msg isNew: NO];
         }
     } else {
@@ -251,31 +296,35 @@
 #pragma mark - RECEIVING FRAMES:
 
 
-- (BOOL) isBusy
-{
-    return _pendingRequests.count > 0 || _pendingResponses.count > 0;
-}
-
-
-- (void) _addPendingResponse: (BLIPResponse*)response
-{
+- (void) _addPendingResponse: (BLIPResponse*)response {
     _pendingResponses[$object(response.number)] = response;
 }
 
 
+// WebSocket delegate method
 - (void)webSocket:(WebSocket *)webSocket didReceiveBinaryMessage:(NSData*)message {
     size_t frameSize = [message length];
     if (frameSize < kBLIPWebSocketFrameHeaderSize) {
         return;
     }
-    
-    const BLIPWebSocketFrameHeader* header = [message bytes];
-    NSData* body = [message subdataWithRange: NSMakeRange(kBLIPWebSocketFrameHeaderSize,
-                                                  frameSize - kBLIPWebSocketFrameHeaderSize)];
 
-    [self receivedFrameWithNumber: NSSwapBigIntToHost(header->number)
-                            flags: NSSwapBigShortToHost(header->flags)
-                             body: body];
+    const void* start = message.bytes;
+    const void* end = start + message.length;
+    UInt64 messageNum;
+    const void* pos = MYDecodeVarUInt(start, end, &messageNum);
+    if (pos) {
+        UInt64 flags;
+        pos = MYDecodeVarUInt(pos, end, &flags);
+        if (pos) {
+            NSData* body = [NSData dataWithBytes: pos length: message.length - (pos-start)];
+            [self receivedFrameWithNumber: (UInt32)messageNum
+                                    flags: flags
+                                     body: body];
+            return;
+        }
+    }
+    [self _closeWithError: BLIPMakeError(kBLIPError_BadFrame,
+                                         @"Bad varint encoding in frame flags")];
 }
 
 
@@ -360,8 +409,8 @@
 #pragma mark - DISPATCHING:
 
 
-- (BLIPDispatcher*) dispatcher
-{
+// Public API
+- (BLIPDispatcher*) dispatcher {
     if( ! _dispatcher ) {
         _dispatcher = [[BLIPDispatcher alloc] init];
     }
@@ -369,8 +418,8 @@
 }
 
 
-- (BOOL) _dispatchMetaRequest: (BLIPRequest*)request
-{
+// Called on the delegate queue (by _dispatchRequest)!
+- (BOOL) _dispatchMetaRequest: (BLIPRequest*)request {
 #if 0
     NSString* profile = request.profile;
     if( [profile isEqualToString: kBLIPProfile_Bye] ) {
@@ -382,37 +431,41 @@
 }
 
 
-- (void) _dispatchRequest: (BLIPRequest*)request
-{
-    LogTo(BLIP,@"Received all of %@",request.descriptionWithProperties);
-    @try{
-        BOOL handled;
-        if( request._flags & kBLIP_Meta )
-            handled =[self _dispatchMetaRequest: request];
-        else {
-            handled = [self.dispatcher dispatchMessage: request];
-            if (!handled && [_delegate respondsToSelector: @selector(blipWebSocket:receivedRequest:)])
-                handled = [_delegate blipWebSocket: self receivedRequest: request];
+- (void) _dispatchRequest: (BLIPRequest*)request {
+    id<BLIPWebSocketDelegate> delegate = _delegate;
+    dispatch_async(_delegateQueue, ^{
+        // Do the dispatching on the delegate queue:
+        LogTo(BLIP,@"Received all of %@",request.descriptionWithProperties);
+        @try{
+            BOOL handled;
+            if( request._flags & kBLIP_Meta )
+                handled =[self _dispatchMetaRequest: request];
+            else {
+                handled = [self.dispatcher dispatchMessage: request];
+                if (!handled && [delegate respondsToSelector: @selector(blipWebSocket:receivedRequest:)])
+                    handled = [delegate blipWebSocket: self receivedRequest: request];
+            }
+            
+            if (!handled) {
+                LogTo(BLIP,@"No handler found for incoming %@",request);
+                [request respondWithErrorCode: kBLIPError_NotFound message: @"No handler was found"];
+            } else if( ! request.noReply && ! request.repliedTo ) {
+                LogTo(BLIP,@"Returning default empty response to %@",request);
+                [request respondWithData: nil contentType: nil];
+            }
+        }@catch( NSException *x ) {
+            MYReportException(x,@"Dispatching BLIP request");
+            [request respondWithException: x];
         }
-        
-        if (!handled) {
-            LogTo(BLIP,@"No handler found for incoming %@",request);
-            [request respondWithErrorCode: kBLIPError_NotFound message: @"No handler was found"];
-        } else if( ! request.noReply && ! request.repliedTo ) {
-            LogTo(BLIP,@"Returning default empty response to %@",request);
-            [request respondWithData: nil contentType: nil];
-        }
-    }@catch( NSException *x ) {
-        MYReportException(x,@"Dispatching BLIP request");
-        [request respondWithException: x];
-    }
+    });
 }
 
-- (void) _dispatchResponse: (BLIPResponse*)response
-{
+- (void) _dispatchResponse: (BLIPResponse*)response {
     LogTo(BLIP,@"Received all of %@",response);
-    if ([_delegate respondsToSelector: @selector(blipWebSocket:receivedResponse:)])
-        [_delegate blipWebSocket: self receivedResponse: response];
+    [self _callDelegate: @selector(blipWebSocket:receivedResponse:)
+                  block: ^(id<BLIPWebSocketDelegate> delegate) {
+        [delegate blipWebSocket: self receivedResponse: response];
+    }];
 }
 
 

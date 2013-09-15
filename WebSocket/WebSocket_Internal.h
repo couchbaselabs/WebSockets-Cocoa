@@ -8,13 +8,23 @@
 
 #import "WebSocket.h"
 #import "GCDAsyncSocket.h"
+#import "Logging.h"
 
 
 #define TIMEOUT_NONE          -1
+#define TIMEOUT_DEFAULT       60
 #define TIMEOUT_REQUEST_BODY  10
 
-#define HTTPLogTrace() NSLog(@"TRACE: %s", __func__ )
-#define HTTPLogTraceWith(MSG, PARAM...) NSLog(@"TRACE: %s " MSG, __func__, PARAM)
+// WebSocket frame types:
+#define WS_OP_CONTINUATION_FRAME   0
+#define WS_OP_TEXT_FRAME           1
+#define WS_OP_BINARY_FRAME         2
+#define WS_OP_CONNECTION_CLOSE     8
+#define WS_OP_PING                 9
+#define WS_OP_PONG                 10
+
+#define HTTPLogTrace() LogTo(@"WS", @"TRACE: %s", __func__ )
+#define HTTPLogTraceWith(MSG, PARAM...) LogTo(@"WS", @"TRACE: %s " MSG, __func__, PARAM)
 
 
 @interface WebSocket () <GCDAsyncSocketDelegate>
@@ -30,13 +40,8 @@
     BOOL _isClient;
 }
 
-- (void)start;
+- (void) start;
 
 - (void) sendFrame: (NSData*)msgData type: (unsigned)type tag: (long)tag;
-
-- (void)didOpen;
-- (void)didReceiveMessage:(NSString *)msg;
-- (void)didReceiveBinaryMessage:(NSData *)msg;
-- (void)didCloseWithCode: (WebSocketCloseCode)code reason: (NSString*)reason;
 
 @end
