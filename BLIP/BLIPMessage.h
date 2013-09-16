@@ -7,14 +7,18 @@
 //
 
 #import <Foundation/Foundation.h>
-@class BLIPProperties, BLIPMutableProperties, BLIPRequest, BLIPResponse;
+@class BLIPProperties, BLIPMutableProperties, BLIPMessage, BLIPRequest, BLIPResponse;
 
 
 @protocol BLIPMessageSender <NSObject>
 - (BOOL) _sendRequest: (BLIPRequest*)q response: (BLIPResponse*)response;
 - (BOOL) _sendResponse: (BLIPResponse*)response;
 @property (readonly) NSError* error;
+- (void) _messageReceivedProperties: (BLIPMessage*)message;
+- (void) _message: (BLIPMessage*)msg receivedMoreData: (NSData*)data;
 @end
+
+@protocol BLIPMessageDataDelegate;
 
 
 /** NSError domain and codes for BLIP */
@@ -43,8 +47,12 @@ NSError *BLIPMakeError( int errorCode, NSString *message, ... ) __attribute__ ((
 /** Abstract superclass for <a href=".#blipdesc">BLIP</a> requests and responses. */
 @interface BLIPMessage : NSObject
 
-/** The BLIPConnection or BLIPWebSocket associated with this message. */
+/** The BLIPWebSocket associated with this message. */
 @property (readonly,strong) id<BLIPMessageSender> connection;
+
+/** The dataDelegate property allows for streaming incoming message data. If a dataDelegate property is set, then as each frame of data arrives the -BLIPMessage:didReceiveData: method will be called. The .body property will _not_ be set.
+    (Exception: This currently doesn't work with compressed messages. The dataDelegate will not be called with such messages.) */
+@property (weak) id<BLIPMessageDataDelegate> dataDelegate;
 
 /** This message's serial number in its connection.
     A BLIPRequest's number is initially zero, then assigned when it's sent.
@@ -53,6 +61,9 @@ NSError *BLIPMakeError( int errorCode, NSString *message, ... ) __attribute__ ((
 
 /** Is this a message sent by me (as opposed to the peer)? */
 @property (readonly) BOOL isMine;
+
+/** Is this a request or a response? */
+@property (readonly) BOOL isRequest;
 
 /** Has this message been sent yet? (Only makes sense when isMine is true.) */
 @property (readonly) BOOL sent;
@@ -118,5 +129,15 @@ NSError *BLIPMakeError( int errorCode, NSString *message, ... ) __attribute__ ((
 /** Similar to -description, but also shows the properties and their values. */
 @property (readonly) NSString* descriptionWithProperties;
 
+
+@end
+
+
+
+@protocol BLIPMessageDataDelegate <NSObject>
+
+/** Called when a new frame of data arrives for a BLIPMessage. The data will not be accumulated into the .body property, so if the delegate doesn't save it, it will be freed.
+    You can detect whether the message is complete by checking its .complete property. */
+- (void) blipMessage: (BLIPMessage*)msg didReceiveData: (NSData*)data;
 
 @end

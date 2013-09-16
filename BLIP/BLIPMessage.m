@@ -84,6 +84,8 @@ NSError *BLIPMakeError( int errorCode, NSString *message, ... )
         [desc appendString: @", noreply"];
     if( _flags & kBLIP_Meta )
         [desc appendString: @", META"];
+    if (_flags & kBLIP_MoreComing)
+        [desc appendString: @", incomplete"];
     [desc appendString: @"]"];
     return desc;
 }
@@ -116,6 +118,7 @@ NSError *BLIPMakeError( int errorCode, NSString *message, ... )
 
 - (BLIPMessageFlags) _flags                 {return _flags;}
 
+- (BOOL) isRequest                          {return (_flags & kBLIP_TypeMask) == kBLIP_MSG;}
 - (BOOL) compressed                         {return (_flags & kBLIP_Compressed) != 0;}
 - (BOOL) urgent                             {return (_flags & kBLIP_Urgent) != 0;}
 - (void) setCompressed: (BOOL)compressed    {[self _setFlag: kBLIP_Compressed value: compressed];}
@@ -247,6 +250,7 @@ NSError *BLIPMakeError( int errorCode, NSString *message, ... )
 }
 
 
+// Generates the next outgoing frame.
 - (NSData*) nextWebSocketFrameWithMaxSize: (UInt16)maxSize moreComing: (BOOL*)outMoreComing {
     Assert(_number!=0);
     Assert(_isMine);
@@ -256,9 +260,9 @@ NSError *BLIPMakeError( int errorCode, NSString *message, ... )
     ssize_t lengthToWrite = _encodedBody.length - _bytesWritten;
     if( lengthToWrite <= 0 && _bytesWritten > 0 )
         return NO; // done
-    Assert(maxSize > kBLIPWebSocketFrameHeaderSize);
-    maxSize -= kBLIPWebSocketFrameHeaderSize;
     UInt16 flags = _flags;
+    size_t headerSize = MYLengthOfVarUInt(_number) + MYLengthOfVarUInt(flags | kBLIP_MoreComing);
+    maxSize -= headerSize;
     if( lengthToWrite > maxSize ) {
         lengthToWrite = maxSize;
         flags |= kBLIP_MoreComing;
@@ -268,7 +272,7 @@ NSError *BLIPMakeError( int errorCode, NSString *message, ... )
         LogTo(BLIPVerbose,@"%@ pushing frame, bytes %lu-%lu (finished)", self, (long)_bytesWritten, _bytesWritten+lengthToWrite);
     }
 
-    NSMutableData* frame = [NSMutableData dataWithCapacity: kBLIPWebSocketFrameHeaderSize + lengthToWrite];
+    NSMutableData* frame = [NSMutableData dataWithCapacity: headerSize + lengthToWrite];
     [frame my_appendVarUInt: _number];
     [frame my_appendVarUInt: flags];
     [frame appendBytes: (UInt8*)_encodedBody.bytes + _bytesWritten length: lengthToWrite];
@@ -279,6 +283,7 @@ NSError *BLIPMakeError( int errorCode, NSString *message, ... )
 }
 
 
+// Parses the next incoming frame.
 - (BOOL) _receivedFrameWithFlags: (BLIPMessageFlags)flags body: (NSData*)body
 {
     Assert(!_isMine);
@@ -308,8 +313,13 @@ NSError *BLIPMakeError( int errorCode, NSString *message, ... )
             self.propertiesAvailable = YES;
         } else if( usedLength < 0 )
             return NO;
+
+        [_connection _messageReceivedProperties: self];
     }
-    
+
+    BOOL useDelegate = (_dataDelegate && _properties && !self.compressed);
+    NSData* readData = _encodedBody;
+
     if( ! (flags & kBLIP_MoreComing) ) {
         // After last frame, decode the data:
         _flags &= ~kBLIP_MoreComing;
@@ -322,11 +332,16 @@ NSError *BLIPMakeError( int errorCode, NSString *message, ... )
                 return NO;
             LogTo(BLIPVerbose,@"Uncompressed %@ from %lu bytes (%.1fx)", self, (unsigned long)encodedLength,
                   _body.length/(double)encodedLength);
-        } else {
+        } else if (!useDelegate) {
             _body = [_encodedBody copy];
         }
         _encodedBody = nil;
         self.propertiesAvailable = self.complete = YES;
+    }
+
+    if (useDelegate && readData.length > 0) {
+        _encodedBody = nil;
+        [_connection _message: self receivedMoreData: readData];
     }
     return YES;
 }

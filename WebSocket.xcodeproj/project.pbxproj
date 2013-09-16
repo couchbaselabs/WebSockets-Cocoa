@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		2711FE8117E65B350055E311 /* BLIPResponse.m in Sources */ = {isa = PBXBuildFile; fileRef = 2711FE8017E65B350055E311 /* BLIPResponse.m */; };
 		275930CA17E037F70078880F /* GCDAsyncSocket.m in Sources */ = {isa = PBXBuildFile; fileRef = 275930C917E037F70078880F /* GCDAsyncSocket.m */; };
 		275930F217E0C8050078880F /* BLIPRequest+HTTP.m in Sources */ = {isa = PBXBuildFile; fileRef = 275930DF17E0B4910078880F /* BLIPRequest+HTTP.m */; };
 		275930F317E0C8050078880F /* GCDAsyncSocket.m in Sources */ = {isa = PBXBuildFile; fileRef = 275930C917E037F70078880F /* GCDAsyncSocket.m */; };
@@ -62,6 +63,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		2711FE7F17E65B350055E311 /* BLIPResponse.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BLIPResponse.h; sourceTree = "<group>"; };
+		2711FE8017E65B350055E311 /* BLIPResponse.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = BLIPResponse.m; sourceTree = "<group>"; };
 		275930C817E037F70078880F /* GCDAsyncSocket.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = GCDAsyncSocket.h; path = GCD/GCDAsyncSocket.h; sourceTree = "<group>"; };
 		275930C917E037F70078880F /* GCDAsyncSocket.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = GCDAsyncSocket.m; path = GCD/GCDAsyncSocket.m; sourceTree = "<group>"; };
 		275930CC17E0B3FD0078880F /* BLIPDispatcher.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BLIPDispatcher.h; sourceTree = "<group>"; };
@@ -165,6 +168,8 @@
 				275930D117E0B3FD0078880F /* BLIPProperties.m */,
 				275930D217E0B3FD0078880F /* BLIPRequest.h */,
 				275930D317E0B3FD0078880F /* BLIPRequest.m */,
+				2711FE7F17E65B350055E311 /* BLIPResponse.h */,
+				2711FE8017E65B350055E311 /* BLIPResponse.m */,
 				275930DE17E0B4910078880F /* BLIPRequest+HTTP.h */,
 				275930DF17E0B4910078880F /* BLIPRequest+HTTP.m */,
 				275930CE17E0B3FD0078880F /* BLIPHTTPProtocol.h */,
@@ -346,6 +351,7 @@
 				275930F717E0C8050078880F /* BLIPMessage.m in Sources */,
 				275930F817E0C8050078880F /* BLIPDispatcher.m in Sources */,
 				275930FC17E0C8050078880F /* BLIPProperties.m in Sources */,
+				2711FE8117E65B350055E311 /* BLIPResponse.m in Sources */,
 				275930FB17E0C8050078880F /* WebSocket.m in Sources */,
 				275930F417E0C8050078880F /* WebSocketClient.m in Sources */,
 				2790126217E4008D0056E125 /* MYData.m in Sources */,

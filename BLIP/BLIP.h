@@ -8,5 +8,6 @@
 
 #import "BLIPWebSocket.h"
 #import "BLIPRequest.h"
+#import "BLIPResponse.h"
 #import "BLIPProperties.h"
 #import "BLIPDispatcher.h"

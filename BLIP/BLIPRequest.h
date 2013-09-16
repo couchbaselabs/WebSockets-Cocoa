@@ -15,9 +15,9 @@
 
 /** Creates an outgoing request.
     The body may be nil.
-    The request is not associated with any BLIPConnection yet, so you must either set its
+    The request is not associated with any BLIPWebSocket yet, so you must either set its
     connection property before calling -send, or pass the request as a parameter to
-    -[BLIPConnection sendRequest:]. */
+    -[BLIPWebSocket sendRequest:]. */
 + (BLIPRequest*) requestWithBody: (NSData*)body;
 
 /** Creates an outgoing request.
@@ -26,9 +26,9 @@
 
 /** Creates an outgoing request.
     The body or properties may be nil.
-    The request is not associated with any BLIPConnection yet, so you must either set its
+    The request is not associated with any BLIPWebSocket yet, so you must either set its
     connection property before calling -send, or pass the request as a parameter to
-    -[BLIPConnection sendRequest:]. */
+    -[BLIPWebSocket sendRequest:]. */
 + (BLIPRequest*) requestWithBody: (NSData*)body
                       properties: (NSDictionary*)properties;
 
@@ -74,24 +74,5 @@
 
 /** Shortcut to respond to this message with an error indicating that an exception occurred. */
 - (void) respondWithException: (NSException*)exception;
-
-@end
-
-
-
-
-/** A reply to a BLIPRequest, in the <a href=".#blipdesc">BLIP</a> protocol. */
-@interface BLIPResponse : BLIPMessage
-
-/** Sends this response. */
-- (BOOL) send;
-
-/** The error returned by the peer, or nil if the response is successful. */
-@property (strong) NSError* error;
-
-/** Sets a target/action to be called when an incoming response is complete.
-    Use this on the response returned from -[BLIPRequest send], to be notified when the response is available. */
-@property (strong) MYTarget *onComplete;
-
 
 @end
