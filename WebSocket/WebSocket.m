@@ -131,6 +131,18 @@ static NSData* kTerminator;
 	return self;
 }
 
+- (id)initWithConnectedSocket: (GCDAsyncSocket*)socket
+                     delegate: (id<WebSocketDelegate>)delegate
+{
+    self = [self init];
+    if (self) {
+		_delegate = delegate;
+        self.asyncSocket = socket;
+        [self didOpen];
+    }
+    return self;
+}
+
 - (void)dealloc {
 	HTTPLogTrace();
 	

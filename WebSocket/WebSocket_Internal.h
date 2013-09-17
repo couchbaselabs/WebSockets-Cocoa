@@ -26,6 +26,11 @@
 #define HTTPLogTrace() LogTo(@"WS", @"TRACE: %s", __func__ )
 #define HTTPLogTraceWith(MSG, PARAM...) LogTo(@"WS", @"TRACE: %s " MSG, __func__, PARAM)
 
+enum {
+    TAG_HTTP_REQUEST_HEADERS = 300,
+    TAG_HTTP_RESPONSE_HEADERS,
+};
+
 
 @interface WebSocket () <GCDAsyncSocketDelegate>
 {

@@ -34,6 +34,10 @@
 		2759310817E0C8050078880F /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27A20E2517DF8DAB00F83C71 /* Foundation.framework */; };
 		2759310E17E0C8540078880F /* WebSocket.m in Sources */ = {isa = PBXBuildFile; fileRef = 27A20E3717DF8E0700F83C71 /* WebSocket.m */; };
 		2759311117E0CF7A0078880F /* blip_main.m in Sources */ = {isa = PBXBuildFile; fileRef = 2759310F17E0CA850078880F /* blip_main.m */; };
+		2763D72B17E809FD0056AB79 /* WebSocketListener.m in Sources */ = {isa = PBXBuildFile; fileRef = 2763D72A17E809FD0056AB79 /* WebSocketListener.m */; };
+		2763D72C17E8A8FC0056AB79 /* CollectionUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 27BEF2AE17DFD78900BA6567 /* CollectionUtils.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
+		2763D72D17E8A91C0056AB79 /* Test.m in Sources */ = {isa = PBXBuildFile; fileRef = 27BEF2B217DFD78A00BA6567 /* Test.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
+		2763D72E17E8A9340056AB79 /* ExceptionUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 275930EC17E0B8000078880F /* ExceptionUtils.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
 		2790125E17E210EB0056E125 /* DDData.m in Sources */ = {isa = PBXBuildFile; fileRef = 27A20E4E17DFC66800F83C71 /* DDData.m */; };
 		2790126217E4008D0056E125 /* MYData.m in Sources */ = {isa = PBXBuildFile; fileRef = 2790126117E4008D0056E125 /* MYData.m */; };
 		27A20E2617DF8DAB00F83C71 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27A20E2517DF8DAB00F83C71 /* Foundation.framework */; };
@@ -96,6 +100,8 @@
 		275930EE17E0C7E90078880F /* libz.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libz.dylib; path = usr/lib/libz.dylib; sourceTree = SDKROOT; };
 		2759310D17E0C8050078880F /* blip */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = blip; sourceTree = BUILT_PRODUCTS_DIR; };
 		2759310F17E0CA850078880F /* blip_main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = blip_main.m; path = ../blip_main.m; sourceTree = "<group>"; };
+		2763D72917E809FD0056AB79 /* WebSocketListener.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WebSocketListener.h; sourceTree = "<group>"; };
+		2763D72A17E809FD0056AB79 /* WebSocketListener.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WebSocketListener.m; sourceTree = "<group>"; };
 		2790125D17E20B270056E125 /* BLIP.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = BLIP.h; sourceTree = "<group>"; };
 		2790125F17E229EF0056E125 /* blip_echo.go */ = {isa = PBXFileReference; lastKnownFileType = text; path = blip_echo.go; sourceTree = "<group>"; };
 		2790126017E4008D0056E125 /* MYData.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MYData.h; sourceTree = "<group>"; };
@@ -229,6 +235,8 @@
 				27A20E3717DF8E0700F83C71 /* WebSocket.m */,
 				27A20E3817DF8E0700F83C71 /* WebSocketClient.h */,
 				27A20E3917DF8E0700F83C71 /* WebSocketClient.m */,
+				2763D72917E809FD0056AB79 /* WebSocketListener.h */,
+				2763D72A17E809FD0056AB79 /* WebSocketListener.m */,
 				27A20E4817DFC46C00F83C71 /* WebSocket_Internal.h */,
 				27A20E2817DF8DAB00F83C71 /* websocket_main.m */,
 				27A20E2A17DF8DAB00F83C71 /* Supporting Files */,
@@ -385,7 +393,11 @@
 				275930CA17E037F70078880F /* GCDAsyncSocket.m in Sources */,
 				2790125E17E210EB0056E125 /* DDData.m in Sources */,
 				27A20E2917DF8DAB00F83C71 /* websocket_main.m in Sources */,
+				2763D72B17E809FD0056AB79 /* WebSocketListener.m in Sources */,
+				2763D72C17E8A8FC0056AB79 /* CollectionUtils.m in Sources */,
+				2763D72E17E8A9340056AB79 /* ExceptionUtils.m in Sources */,
 				2711FE8317E7AD9B0055E311 /* Logging.m in Sources */,
+				2763D72D17E8A91C0056AB79 /* Test.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -50,6 +50,10 @@ typedef enum WebSocketCloseCode WebSocketCloseCode;
 /** Designated initializer */
 - (instancetype) init;
 
+/** Starts a server-side WebSocket on an already-open GCDAsyncSocket. */
+- (id)initWithConnectedSocket: (GCDAsyncSocket*)socket
+                     delegate: (id<WebSocketDelegate>)delegate;
+
 @property (weak) id<WebSocketDelegate> delegate;
 
 /** Socket timeout interval. If no traffic is received for this long, the socket will close.
@@ -114,6 +118,12 @@ typedef enum WebSocketCloseCode WebSocketCloseCode;
 /** Delegate API for WebSocket and its subclasses. */
 @protocol WebSocketDelegate <NSObject>
 @optional
+
+/** Only sent to a WebSocket opened from a WebSocketListener, before -webSocketDidOpen:.
+    @param headers  The HTTP headers in the incoming request
+    @return  An HTTP status code: should be 101 to accept, or a value >= 300 to refuse.
+        (As a convenience, any status code < 300 is mapped to 101. Also, if the client want to return a boolean value, YES maps to 101 and NO maps to 403.)*/
+- (int) webSocket: (WebSocket*)ws shouldAccept: (NSURLRequest*)request;
 
 - (void) webSocketDidOpen:(WebSocket *)ws;
 

@@ -14,12 +14,6 @@
 #import <Security/SecRandom.h>
 
 
-enum {
-    TAG_HTTP_REQUEST_HEADERS = 300,
-    TAG_HTTP_RESPONSE_HEADERS,
-};
-
-
 @implementation WebSocketClient
 {
     NSURLRequest* _urlRequest;
