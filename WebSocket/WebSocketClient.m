@@ -103,6 +103,8 @@
                                                   (__bridge CFStringRef)headers[header]);
 
     NSData* requestData = CFBridgingRelease(CFHTTPMessageCopySerializedMessage(httpMsg));
+    CFRelease(httpMsg);
+    
     NSLog(@"Sending HTTP request:\n%@", [[NSString alloc] initWithData: requestData encoding:NSUTF8StringEncoding]);
     [_asyncSocket writeData: requestData withTimeout: self.timeout
                         tag: TAG_HTTP_REQUEST_HEADERS];
