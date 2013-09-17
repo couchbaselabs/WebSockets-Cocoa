@@ -96,6 +96,7 @@ static inline void maskBytes(NSMutableData* data, NSUInteger offset, NSUInteger 
 
 @implementation WebSocket
 {
+    NSDictionary* _tlsSettings;
 	BOOL _isRFC6455;
     NSTimeInterval _timeout;
 	BOOL _nextFrameMasked;
@@ -149,6 +150,8 @@ static NSData* kTerminator;
     NSAssert(!_asyncSocket, @"Already have a socket");
     _asyncSocket = socket;
     [_asyncSocket setDelegate:self delegateQueue:_websocketQueue];
+    if (_tlsSettings)
+        [_asyncSocket startTLS: _tlsSettings];
 }
 
 - (id)delegate {
@@ -166,6 +169,11 @@ static NSData* kTerminator;
 		_delegate = newDelegate;
 	});
 }
+
+- (void) useTLS: (NSDictionary*)tlsSettings {
+    _tlsSettings = tlsSettings;
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma mark - Start and Stop
@@ -201,7 +209,7 @@ static NSData* kTerminator;
 
 - (void) close {
     // Codes are defined in http://tools.ietf.org/html/rfc6455#section-7.4
-    [self closeWithCode: 1000 reason: nil];
+    [self closeWithCode: kWebSocketCloseNormal reason: nil];
 }
 
 - (void) closeWithCode:(WebSocketCloseCode)code reason:(NSString *)reason {

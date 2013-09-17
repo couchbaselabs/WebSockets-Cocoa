@@ -1,9 +1,9 @@
 //
 //  BLIP_Internal.h
-//  MYNetwork
+//  WebSocket
 //
 //  Created by Jens Alfke on 5/10/08.
-//  Copyright 2008 Jens Alfke. All rights reserved.
+//  Copyright 2008-2013 Jens Alfke. All rights reserved.
 //
 
 #import "BLIPRequest.h"

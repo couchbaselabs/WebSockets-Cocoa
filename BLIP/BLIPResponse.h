@@ -7,7 +7,6 @@
 //
 
 #import "BLIPMessage.h"
-@class MYTarget;
 
 
 /** A reply to a BLIPRequest, in the <a href=".#blipdesc">BLIP</a> protocol. */
@@ -21,7 +20,7 @@
 
 /** Sets a target/action to be called when an incoming response is complete.
     Use this on the response returned from -[BLIPRequest send], to be notified when the response is available. */
-@property (strong) MYTarget *onComplete;
+@property (strong) void (^onComplete)();
 
 
 @end

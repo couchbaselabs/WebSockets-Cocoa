@@ -1,6 +1,6 @@
 //
 //  BLIPWebSocket.m
-//  MYNetwork
+//  WebSocket
 //
 //  Created by Jens Alfke on 4/1/13.
 //
@@ -93,6 +93,11 @@
 }
 
 
+- (NSURL*) URL {
+    return ((WebSocketClient*)_webSocket).URL;
+}
+
+
 @synthesize error=_error, webSocket=_webSocket;
 
 
@@ -100,10 +105,12 @@
 
 
 // Public API
-- (BOOL) open {
+- (BOOL) connect: (NSError**)outError {
     NSError* error;
     if (![(WebSocketClient*)_webSocket connect: &error]) {
         self.error = error;
+        if (outError)
+            *outError = error;
         return NO;
     }
     return YES;
@@ -116,7 +123,7 @@
 }
 
 // Public API
-- (void)closeWithCode:(NSInteger)code reason:(NSString *)reason {
+- (void)closeWithCode:(WebSocketCloseCode)code reason:(NSString *)reason {
     [_webSocket closeWithCode: code reason: reason];
 }
 

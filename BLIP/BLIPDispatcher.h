@@ -1,13 +1,17 @@
 //
 //  BLIPDispatcher.h
-//  MYNetwork
+//  WebSocket
 //
 //  Created by Jens Alfke on 5/15/08.
-//  Copyright 2008 Jens Alfke. All rights reserved.
+//  Copyright 2008-2013 Jens Alfke. All rights reserved.
 //
 
 #import <Foundation/Foundation.h>
 @class MYTarget, BLIPMessage;
+
+
+/** A block that gets called if a dispatcher rule matches. */
+typedef void (^BLIPDispatchBlock)(BLIPMessage*);
 
 
 /** Routes BLIP messages to targets based on a series of rules.
@@ -30,16 +34,14 @@
     the parent, if there is one. */
 @property (strong) BLIPDispatcher *parent;
 
+/** Adds a new rule, to call a given target method if a given predicate matches the message. The return value is a token that you can later pass to -removeRule: to unregister this rule. */
+- (id) onPredicate: (NSPredicate*)predicate do: (BLIPDispatchBlock)block;
+
 /** Convenience method that adds a rule that compares a property against a string. */
-- (void) addTarget: (MYTarget*)target forValueOfProperty: (NSString*)value forKey: (NSString*)key;
+- (id) onProperty: (NSString*)property value: (NSString*)value do: (BLIPDispatchBlock)block;
 
-#if ! TARGET_OS_IPHONE      /* NSPredicate is not available on iPhone, unfortunately */
-/** Adds a new rule, to call a given target method if a given predicate matches the message. */
-- (void) addTarget: (MYTarget*)target forPredicate: (NSPredicate*)predicate;
-#endif
-
-/** Removes all rules with the given target method. */
-- (void) removeTarget: (MYTarget*)target;
+/** Removes all rules with the given target. */
+- (void) removeRule: (id)rule;
 
 /** Tests the message against all the rules, in the order they were added, and calls the
     target of the first matching rule.
@@ -51,6 +53,6 @@
 /** Returns a target object that will call this dispatcher's -dispatchMessage: method.
     This can be used to make this dispatcher the target of another dispatcher's rule,
     stringing them together hierarchically. */
-- (MYTarget*) asTarget;
+- (BLIPDispatchBlock) asDispatchBlock;
 
 @end

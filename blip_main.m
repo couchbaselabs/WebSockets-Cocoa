@@ -40,8 +40,9 @@
         _webSocket = [[BLIPWebSocket alloc] initWithURL: url];
         [_webSocket setDelegate: self queue: NULL]; // use current queue
         _webSocket.dispatchPartialMessages = kStreaming;
-        if (![_webSocket open]) {
-            Warn(@"Failed to connect: %@", _webSocket.error);
+        NSError* error;
+        if (![_webSocket connect: &error]) {
+            Warn(@"Failed to connect: %@", error);
             exit(1);
         }
         Log(@"** Connecting...");

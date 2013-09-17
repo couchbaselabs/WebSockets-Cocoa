@@ -1,9 +1,9 @@
 //
 //  BLIPRequest.h
-//  MYNetwork
+//  WebSocket
 //
 //  Created by Jens Alfke on 5/22/08.
-//  Copyright 2008 Jens Alfke. All rights reserved.
+//  Copyright 2008-2013 Jens Alfke. All rights reserved.
 //
 
 #import "BLIPMessage.h"
@@ -37,12 +37,6 @@
     It can later be sent by setting the connection property and calling -send. */
 @property (strong) id<BLIPMessageSender> connection;
 
-/** Sends this request over its connection.
-    (Actually, the connection queues it to be sent; this method always returns immediately.)
-    Its matching response object will be returned, or nil if the request couldn't be sent.
-    If this request has not been assigned to a connection, an exception will be raised. */
-- (BLIPResponse*) send;
-
 /** Does this request not need a response?
     This property can only be set before sending the request. */
 @property BOOL noReply;
@@ -54,9 +48,17 @@
     but the contents of the response won't be filled in until it arrives, of course. */
 @property (readonly) BLIPResponse *response;
 
+/** Sends this request over its connection.
+    (Actually, the connection queues it to be sent; this method always returns immediately.)
+    Its matching response object will be returned, or nil if the request couldn't be sent.
+    If this request has not been assigned to a connection, an exception will be raised. */
+- (BLIPResponse*) send;
+
 /** Call this when a request arrives, to indicate that you want to respond to it later.
     It will prevent a default empty response from being sent upon return from the request handler. */
 - (void) deferResponse;
+
+#pragma mark - RESPONSE SHORTCUTS:
 
 /** Shortcut to respond to this request with the given data.
     The contentType, if not nil, is stored in the "Content-Type" property. */

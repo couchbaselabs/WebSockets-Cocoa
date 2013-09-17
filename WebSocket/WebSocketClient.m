@@ -23,7 +23,6 @@ enum {
 @implementation WebSocketClient
 {
     NSURLRequest* _urlRequest;
-    NSDictionary* _tlsSettings;
     NSArray* _protocols;
     NSString* _nonceKey;
 }
@@ -36,18 +35,13 @@ enum {
         _isClient = YES;
         self.timeout = urlRequest.timeoutInterval;
         if ([urlRequest.URL.scheme caseInsensitiveCompare: @"https"] == 0)
-            _tlsSettings = @{};  // default settings
+           [self useTLS: @{}];  // default TLS settings
     }
     return self;
 }
 
 - (id)initWithURL:(NSURL*)url {
     return [self initWithURLRequest: [NSURLRequest requestWithURL: url]];
-}
-
-
-- (void) useTLS: (NSDictionary*)tlsSettings {
-    _tlsSettings = tlsSettings;
 }
 
 
@@ -63,11 +57,14 @@ enum {
                          error: outError]) {
         return NO;
     }
-    if (_tlsSettings)
-        [socket startTLS: _tlsSettings];
     self.asyncSocket = socket;
     [super start];
     return YES;
+}
+
+
+- (NSURL*) URL {
+    return _urlRequest.URL;
 }
 
 

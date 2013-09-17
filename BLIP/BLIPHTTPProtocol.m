@@ -1,6 +1,6 @@
 //
 //  BLIPHTTPProtocol.m
-//  MYNetwork
+//  WebSocket
 //
 //  Created by Jens Alfke on 4/15/13.
 //
@@ -8,24 +8,30 @@
 
 #import "BLIPHTTPProtocol.h"
 #import "BLIPWebSocket.h"
+#import "BLIPPool.h"
 #import "BLIPRequest+HTTP.h"
 
 #import "CollectionUtils.h"
 #import "Logging.h"
-#import "Target.h"
+
+
+@interface BLIPHTTPProtocol () <BLIPMessageDataDelegate>
+@end
 
 
 @implementation BLIPHTTPProtocol
 {
     NSURL* _webSocketURL;
     BLIPResponse* _response;
+    BOOL _gotHeaders;
+    NSMutableData* _responseBody;
 }
 
 
 static NSMutableDictionary* sMappings;
 static NSMutableSet* sMappedHosts;
 
-static NSMutableDictionary* sSockets;
+static BLIPPool* sSockets;
 
 
 + (void) registerWebSocketURL: (NSURL*)wsURL forURL: (NSURL*)baseURL {
@@ -68,22 +74,6 @@ static inline bool urlPrefixMatch(NSString* prefix, NSString* urlString) {
 }
 
 
-// Returns an open BLIPWebSocket to use to communicate with a given wshttp: URL.
-+ (BLIPWebSocket*) connectionToURL: (NSURL*)url {
-    @synchronized(self) {
-        if (!sSockets)
-            sSockets = [[NSMutableDictionary alloc] init];
-        BLIPWebSocket* socket = sSockets[url];
-        if (!socket) {
-            socket = [[BLIPWebSocket alloc] initWithURL: url];
-            sSockets[url] = socket;
-            [socket open];
-        }
-        return socket;
-    }
-}
-
-
 #pragma mark - INITIALIZATION:
 
 
@@ -115,22 +105,27 @@ static inline bool urlPrefixMatch(NSString* prefix, NSString* urlString) {
 
 - (void) startLoading {
     if (!sSockets)
-        sSockets = [[NSMutableDictionary alloc] init];
-    BLIPWebSocket* socket = [[self class] connectionToURL: _webSocketURL];
-
+        sSockets = [[BLIPPool alloc] initWithDelegate: nil
+                                        dispatchQueue: dispatch_get_current_queue()];
+    NSError* error;
+    BLIPWebSocket* socket = [sSockets socketToURL: _webSocketURL error: &error];
+    if (!socket) {
+        [self.client URLProtocol: self didFailWithError: error];
+        return;
+    }
     _response = [socket sendRequest: [BLIPRequest requestWithHTTPRequest: self.request]];
-    _response.onComplete = $target(self, onComplete:);
+    _response.dataDelegate = self;
 }
 
 
 - (void)stopLoading {
     // The Obj-C BLIP API has no way to stop a request, so just ignore its data:
-    _response.onComplete = nil;
+    _response.dataDelegate = nil;
     _response = nil;
 }
 
 
-- (void) onComplete: (id)sender {
+- (void) blipMessage: (BLIPMessage*)msg didReceiveData: (NSData*)data {
     id<NSURLProtocolClient> client = self.client;
     NSError* error = _response.error;
     if (error) {
@@ -138,14 +133,28 @@ static inline bool urlPrefixMatch(NSString* prefix, NSString* urlString) {
         return;
     }
 
-    NSData* body;
-    NSURLResponse* response = [_response asHTTPResponseWithBody: &body forURL: self.request.URL];
+    if (!_gotHeaders) {
+        if (!_responseBody)
+            _responseBody = [data mutableCopy];
+        else
+            [_responseBody appendData: data];
 
-    [client URLProtocol: self didReceiveResponse: response
-         cacheStoragePolicy:NSURLCacheStorageNotAllowed];
-    if (body.length > 0)
-        [client URLProtocol: self didLoadData: body];
-    [client URLProtocolDidFinishLoading: self];
+        NSData* body = nil;
+        NSURLResponse* response = [_response asHTTPResponseWithBody: &body
+                                                             forURL: self.request.URL];
+        if (response) {
+            _gotHeaders = YES;
+            [client URLProtocol: self didReceiveResponse: response
+                    cacheStoragePolicy: NSURLCacheStorageNotAllowed];
+        }
+        data = body;
+    }
+
+    if (data.length > 0)
+        [client URLProtocol: self didLoadData: data];
+
+    if (msg.complete)
+        [client URLProtocolDidFinishLoading: self];
 }
 
 

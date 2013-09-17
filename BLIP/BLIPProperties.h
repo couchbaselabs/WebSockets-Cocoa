@@ -1,9 +1,9 @@
 //
 //  BLIPProperties.h
-//  MYNetwork
+//  WebSocket
 //
 //  Created by Jens Alfke on 5/13/08.
-//  Copyright 2008 Jens Alfke. All rights reserved.
+//  Copyright 2008-2013 Jens Alfke. All rights reserved.
 //
 
 #import <Foundation/Foundation.h>

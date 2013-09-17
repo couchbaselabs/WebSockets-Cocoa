@@ -1,9 +1,9 @@
 //
 //  BLIPRequest.m
-//  MYNetwork
+//  WebSocket
 //
 //  Created by Jens Alfke on 5/22/08.
-//  Copyright 2008 Jens Alfke. All rights reserved.
+//  Copyright 2008-2013 Jens Alfke. All rights reserved.
 //
 
 #import "BLIPRequest.h"
@@ -151,7 +151,7 @@
 
 
 /*
- Copyright (c) 2008, Jens Alfke <jens@mooseyard.com>. All rights reserved.
+ Copyright (c) 2008-2013, Jens Alfke <jens@mooseyard.com>. All rights reserved.
  
  Redistribution and use in source and binary forms, with or without modification, are permitted
  provided that the following conditions are met:

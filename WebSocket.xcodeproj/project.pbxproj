@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		2711FE8117E65B350055E311 /* BLIPResponse.m in Sources */ = {isa = PBXBuildFile; fileRef = 2711FE8017E65B350055E311 /* BLIPResponse.m */; };
+		2711FE8317E7AD9B0055E311 /* Logging.m in Sources */ = {isa = PBXBuildFile; fileRef = 27BEF2B017DFD78900BA6567 /* Logging.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
+		2711FE8617E7B2870055E311 /* BLIPPool.m in Sources */ = {isa = PBXBuildFile; fileRef = 2711FE8517E7B2870055E311 /* BLIPPool.m */; };
 		275930CA17E037F70078880F /* GCDAsyncSocket.m in Sources */ = {isa = PBXBuildFile; fileRef = 275930C917E037F70078880F /* GCDAsyncSocket.m */; };
 		275930F217E0C8050078880F /* BLIPRequest+HTTP.m in Sources */ = {isa = PBXBuildFile; fileRef = 275930DF17E0B4910078880F /* BLIPRequest+HTTP.m */; };
 		275930F317E0C8050078880F /* GCDAsyncSocket.m in Sources */ = {isa = PBXBuildFile; fileRef = 275930C917E037F70078880F /* GCDAsyncSocket.m */; };
@@ -65,6 +67,9 @@
 /* Begin PBXFileReference section */
 		2711FE7F17E65B350055E311 /* BLIPResponse.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BLIPResponse.h; sourceTree = "<group>"; };
 		2711FE8017E65B350055E311 /* BLIPResponse.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = BLIPResponse.m; sourceTree = "<group>"; };
+		2711FE8217E7A4420055E311 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = text; path = README.md; sourceTree = "<group>"; };
+		2711FE8417E7B2870055E311 /* BLIPPool.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BLIPPool.h; sourceTree = "<group>"; };
+		2711FE8517E7B2870055E311 /* BLIPPool.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = BLIPPool.m; sourceTree = "<group>"; };
 		275930C817E037F70078880F /* GCDAsyncSocket.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = GCDAsyncSocket.h; path = GCD/GCDAsyncSocket.h; sourceTree = "<group>"; };
 		275930C917E037F70078880F /* GCDAsyncSocket.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = GCDAsyncSocket.m; path = GCD/GCDAsyncSocket.m; sourceTree = "<group>"; };
 		275930CC17E0B3FD0078880F /* BLIPDispatcher.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BLIPDispatcher.h; sourceTree = "<group>"; };
@@ -90,14 +95,14 @@
 		275930EC17E0B8000078880F /* ExceptionUtils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ExceptionUtils.m; sourceTree = "<group>"; };
 		275930EE17E0C7E90078880F /* libz.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libz.dylib; path = usr/lib/libz.dylib; sourceTree = SDKROOT; };
 		2759310D17E0C8050078880F /* blip */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = blip; sourceTree = BUILT_PRODUCTS_DIR; };
-		2759310F17E0CA850078880F /* blip_main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = blip_main.m; sourceTree = "<group>"; };
+		2759310F17E0CA850078880F /* blip_main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = blip_main.m; path = ../blip_main.m; sourceTree = "<group>"; };
 		2790125D17E20B270056E125 /* BLIP.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = BLIP.h; sourceTree = "<group>"; };
 		2790125F17E229EF0056E125 /* blip_echo.go */ = {isa = PBXFileReference; lastKnownFileType = text; path = blip_echo.go; sourceTree = "<group>"; };
 		2790126017E4008D0056E125 /* MYData.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MYData.h; sourceTree = "<group>"; };
 		2790126117E4008D0056E125 /* MYData.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MYData.m; sourceTree = "<group>"; };
 		27A20E2217DF8DAB00F83C71 /* WebSocket */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = WebSocket; sourceTree = BUILT_PRODUCTS_DIR; };
 		27A20E2517DF8DAB00F83C71 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
-		27A20E2817DF8DAB00F83C71 /* websocket_main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = websocket_main.m; path = WebSocket/websocket_main.m; sourceTree = "<group>"; };
+		27A20E2817DF8DAB00F83C71 /* websocket_main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = websocket_main.m; sourceTree = "<group>"; };
 		27A20E2B17DF8DAB00F83C71 /* WebSocket-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "WebSocket-Prefix.pch"; sourceTree = "<group>"; };
 		27A20E3617DF8E0700F83C71 /* WebSocket.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WebSocket.h; sourceTree = "<group>"; };
 		27A20E3717DF8E0700F83C71 /* WebSocket.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WebSocket.m; sourceTree = "<group>"; };
@@ -170,10 +175,13 @@
 				275930D317E0B3FD0078880F /* BLIPRequest.m */,
 				2711FE7F17E65B350055E311 /* BLIPResponse.h */,
 				2711FE8017E65B350055E311 /* BLIPResponse.m */,
+				2711FE8417E7B2870055E311 /* BLIPPool.h */,
+				2711FE8517E7B2870055E311 /* BLIPPool.m */,
 				275930DE17E0B4910078880F /* BLIPRequest+HTTP.h */,
 				275930DF17E0B4910078880F /* BLIPRequest+HTTP.m */,
 				275930CE17E0B3FD0078880F /* BLIPHTTPProtocol.h */,
 				275930CF17E0B3FD0078880F /* BLIPHTTPProtocol.m */,
+				2759310F17E0CA850078880F /* blip_main.m */,
 			);
 			path = BLIP;
 			sourceTree = "<group>";
@@ -181,8 +189,7 @@
 		27A20E1917DF8DAB00F83C71 = {
 			isa = PBXGroup;
 			children = (
-				27A20E2817DF8DAB00F83C71 /* websocket_main.m */,
-				2759310F17E0CA850078880F /* blip_main.m */,
+				2711FE8217E7A4420055E311 /* README.md */,
 				27A20E2717DF8DAB00F83C71 /* WebSocket */,
 				275930CB17E0B3FD0078880F /* BLIP */,
 				27A20E4C17DFC66800F83C71 /* Categories */,
@@ -220,9 +227,10 @@
 			children = (
 				27A20E3617DF8E0700F83C71 /* WebSocket.h */,
 				27A20E3717DF8E0700F83C71 /* WebSocket.m */,
-				27A20E4817DFC46C00F83C71 /* WebSocket_Internal.h */,
 				27A20E3817DF8E0700F83C71 /* WebSocketClient.h */,
 				27A20E3917DF8E0700F83C71 /* WebSocketClient.m */,
+				27A20E4817DFC46C00F83C71 /* WebSocket_Internal.h */,
+				27A20E2817DF8DAB00F83C71 /* websocket_main.m */,
 				27A20E2A17DF8DAB00F83C71 /* Supporting Files */,
 			);
 			path = WebSocket;
@@ -347,6 +355,7 @@
 				275930F917E0C8050078880F /* BLIPWebSocket.m in Sources */,
 				275930F217E0C8050078880F /* BLIPRequest+HTTP.m in Sources */,
 				275930F517E0C8050078880F /* BLIPHTTPProtocol.m in Sources */,
+				2711FE8617E7B2870055E311 /* BLIPPool.m in Sources */,
 				275930F617E0C8050078880F /* BLIPRequest.m in Sources */,
 				275930F717E0C8050078880F /* BLIPMessage.m in Sources */,
 				275930F817E0C8050078880F /* BLIPDispatcher.m in Sources */,
@@ -376,6 +385,7 @@
 				275930CA17E037F70078880F /* GCDAsyncSocket.m in Sources */,
 				2790125E17E210EB0056E125 /* DDData.m in Sources */,
 				27A20E2917DF8DAB00F83C71 /* websocket_main.m in Sources */,
+				2711FE8317E7AD9B0055E311 /* Logging.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

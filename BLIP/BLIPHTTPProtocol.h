@@ -1,6 +1,6 @@
 //
 //  BLIPHTTPProtocol.h
-//  MYNetwork
+//  WebSocket
 //
 //  Created by Jens Alfke on 4/15/13.
 //

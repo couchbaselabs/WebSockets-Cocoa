@@ -1,6 +1,6 @@
 //
 //  BLIPRequest+HTTP.m
-//  MYNetwork
+//  WebSocket
 //
 //  Created by Jens Alfke on 4/15/13.
 //

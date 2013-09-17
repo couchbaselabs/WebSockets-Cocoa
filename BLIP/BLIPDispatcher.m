@@ -1,16 +1,15 @@
 //
 //  BLIPDispatcher.m
-//  MYNetwork
+//  WebSocket
 //
 //  Created by Jens Alfke on 5/15/08.
-//  Copyright 2008 Jens Alfke. All rights reserved.
+//  Copyright 2008-2013 Jens Alfke. All rights reserved.
 //
 
 #import "BLIPDispatcher.h"
 #import "Target.h"
 #import "BLIPRequest.h"
 #import "BLIPProperties.h"
-#import "Logging.h"
 #import "Test.h"
 
 
@@ -36,50 +35,29 @@
 @synthesize parent=_parent;
 
 
-#if ! TARGET_OS_IPHONE
-- (void) addTarget: (MYTarget*)target forPredicate: (NSPredicate*)predicate
-{
-    [_targets addObject: target];
+- (id) onPredicate: (NSPredicate*)predicate do: (BLIPDispatchBlock)block {
+    [_targets addObject: block];
     [_predicates addObject: predicate];
+    return @(_targets.count - 1);
 }
-#endif
 
 
-- (void) removeTarget: (MYTarget*)target
+- (void) removeRule: (id)rule
 {
-    NSUInteger i = [_targets indexOfObject: target];
-    if( i != NSNotFound ) {
-        [_targets removeObjectAtIndex: i];
-        [_predicates removeObjectAtIndex: i];
-    }
+    NSUInteger ruleID = [$cast(NSNumber, rule) unsignedIntegerValue];
+    _targets[ruleID] = [NSNull null];
+    _predicates[ruleID] = [NSNull null];
 }
 
 
-- (void) addTarget: (MYTarget*)target forValueOfProperty: (NSString*)value forKey: (NSString*)key
-{
-#if TARGET_OS_IPHONE
-    Assert(target);
-    [_predicates addObject: $array(key,value)];
-    [_targets addObject: target];
-#else
-    [self addTarget: target 
-       forPredicate: [NSComparisonPredicate predicateWithLeftExpression: [NSExpression expressionForKeyPath: key]
-                                                        rightExpression: [NSExpression expressionForConstantValue: value]
-                                                               modifier: NSDirectPredicateModifier
-                                                                   type: NSEqualToPredicateOperatorType
-                                                                options: 0]];
-#endif
-}
-
-
-static BOOL testPredicate( id predicate, NSDictionary *properties ) {
-#if TARGET_OS_IPHONE
-    NSString *key = [predicate objectAtIndex: 0];
-    NSString *value = [predicate objectAtIndex: 1];
-    return $equal( [properties objectForKey: key], value );
-#else
-    return [(NSPredicate*)predicate evaluateWithObject: properties];
-#endif
+- (id) onProperty: (NSString*)key value: (NSString*)value do: (BLIPDispatchBlock)block {
+    return [self onPredicate: [NSComparisonPredicate
+                predicateWithLeftExpression: [NSExpression expressionForKeyPath: key]
+                            rightExpression: [NSExpression expressionForConstantValue: value]
+                                   modifier: NSDirectPredicateModifier
+                                       type: NSEqualToPredicateOperatorType
+                                    options: 0]
+                   do: block];
 }
 
 
@@ -89,10 +67,9 @@ static BOOL testPredicate( id predicate, NSDictionary *properties ) {
     NSUInteger n = _predicates.count;
     for( NSUInteger i=0; i<n; i++ ) {
         id p = _predicates[i];
-        if( testPredicate(p, properties) ) {
-            MYTarget *target = _targets[i];
-            LogTo(BLIP,@"Dispatcher matched %@ -- calling %@",p,target);
-            [target invokeWithSender: message];
+        if([$castIf(NSPredicate,p) evaluateWithObject: properties]) {
+            BLIPDispatchBlock target = _targets[i];
+            target(message);
             return YES;
         }
     }
@@ -100,9 +77,11 @@ static BOOL testPredicate( id predicate, NSDictionary *properties ) {
 }
 
 
-- (MYTarget*) asTarget;
+- (BLIPDispatchBlock) asDispatchBlock
 {
-    return $target(self,dispatchMessage:);
+    return ^(BLIPMessage* msg) {
+        [self dispatchMessage: msg];
+    };
 }
 
 
@@ -110,7 +89,7 @@ static BOOL testPredicate( id predicate, NSDictionary *properties ) {
 
 
 /*
- Copyright (c) 2008, Jens Alfke <jens@mooseyard.com>. All rights reserved.
+ Copyright (c) 2008-2013, Jens Alfke <jens@mooseyard.com>. All rights reserved.
  
  Redistribution and use in source and binary forms, with or without modification, are permitted
  provided that the following conditions are met:

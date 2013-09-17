@@ -9,7 +9,6 @@
 #import "BLIPResponse.h"
 #import "BLIP_Internal.h"
 
-#import "Target.h"
 #import "Logging.h"
 #import "Test.h"
 #import "ExceptionUtils.h"
@@ -17,7 +16,7 @@
 
 @implementation BLIPResponse
 {
-    MYTarget *_onComplete;
+    void (^_onComplete)();
 }
 
 - (id) _initWithRequest: (BLIPRequest*)request
@@ -132,8 +131,8 @@
     [super setComplete: complete];
     if( complete && _onComplete ) {
         @try{
-            [_onComplete invokeWithSender: self];
-        }catchAndReport(@"BLIPRequest onComplete target");
+            _onComplete();
+        }catchAndReport(@"BLIPRequest onComplete block");
     }
 }
 
@@ -163,7 +162,7 @@
 
 
 /*
- Copyright (c) 2008, Jens Alfke <jens@mooseyard.com>. All rights reserved.
+ Copyright (c) 2008-2013, Jens Alfke <jens@mooseyard.com>. All rights reserved.
  
  Redistribution and use in source and binary forms, with or without modification, are permitted
  provided that the following conditions are met:

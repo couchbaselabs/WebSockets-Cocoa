@@ -1,6 +1,6 @@
 //
 //  BLIPWebSocket.h
-//  MYNetwork
+//  WebSocket
 //
 //  Created by Jens Alfke on 4/1/13.
 //
@@ -18,14 +18,19 @@
 - (id)initWithURLRequest:(NSURLRequest *)request;
 - (id)initWithURL:(NSURL *)url;
 
+/** Attaches a delegate, and specifies what GCD queue it should be called on. */
 - (void) setDelegate: (id<BLIPWebSocketDelegate>)delegate
                queue: (dispatch_queue_t)delegateQueue;
 
+@property (readonly) NSURL* URL;
+
+/** The underlying WebSocket. */
 @property (readonly) WebSocket* webSocket;
 
-- (BOOL)open;
+- (BOOL) connect: (NSError**)outError;
+
 - (void)close;
-- (void)closeWithCode:(NSInteger)code reason:(NSString *)reason;
+- (void)closeWithCode:(WebSocketCloseCode)code reason:(NSString *)reason;
 
 /** If set to YES, an incoming message will be dispatched to the delegate and/or dispatcher before it's complete, as soon as its properties are available. The application should then set a dataDelegate on the message to receive its data a frame at a time. */
 @property BOOL dispatchPartialMessages;
@@ -64,7 +69,7 @@
 
 - (void)blipWebSocket: (BLIPWebSocket*)webSocket
      didCloseWithCode: (WebSocketCloseCode)code
-               reason:( NSString *)reason;
+               reason: (NSString*)reason;
 
 /** Called when a BLIPRequest is received from the peer, if there is no BLIPDispatcher
     rule to handle it.
