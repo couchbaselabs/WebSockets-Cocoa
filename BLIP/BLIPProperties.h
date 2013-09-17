@@ -3,8 +3,8 @@
 //  WebSocket
 //
 //  Created by Jens Alfke on 5/13/08.
-//  Copyright 2008-2013 Jens Alfke. All rights reserved.
-//
+//  Copyright 2008-2013 Jens Alfke.
+//  Copyright (c) 2013 Couchbase, Inc. All rights reserved.
 
 #import <Foundation/Foundation.h>
 
@@ -49,7 +49,7 @@
 @interface BLIPMutableProperties : BLIPProperties
 
 /** Initializes a new instance, adding all the key/value pairs from the given NSDictionary. */
-- (id) initWithDictionary: (NSDictionary*)dict;
+- (instancetype) initWithDictionary: (NSDictionary*)dict;
 
 /** Sets the value of a property. A nil value is allowed, and removes the property. */
 - (void) setValue: (NSString*)value ofProperty: (NSString*)prop;

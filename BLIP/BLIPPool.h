@@ -4,7 +4,6 @@
 //
 //  Created by Jens Alfke on 9/16/13.
 //  Copyright (c) 2013 Couchbase. All rights reserved.
-//
 
 #import "BLIPWebSocket.h"
 
@@ -13,8 +12,8 @@
     By using this class you can conserve sockets by opening only a single socket to a WebSocket endpoint. */
 @interface BLIPPool : NSObject
 
-- (id)initWithDelegate: (id<BLIPWebSocketDelegate>)delegate
-         dispatchQueue: (dispatch_queue_t)queue;
+- (instancetype) initWithDelegate: (id<BLIPWebSocketDelegate>)delegate
+                    dispatchQueue: (dispatch_queue_t)queue;
 
 /** All the opened sockets will call this delegate. */
 @property (weak) id<BLIPWebSocketDelegate> delegate;

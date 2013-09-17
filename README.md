@@ -2,6 +2,8 @@ This is an Objective-C implementation of the [WebSocket][WEBSOCKET] protocol, fo
 
 It's built on top of Robbie Hanson's excellent [CocoaAsyncSocket][ASYNC] library. Its WebSocket class started out as a hack of a class from his [CocoaHTTPServer][HTTPSERVER], but has evolved from there.
 
+(Note: this code is unrelated to the [cocoa-websocket][COCOAWEBSOCKET] library, except that they both use AsyncSocket.)
+
 ## BLIP Protocol
 
 BLIP frames are WebSocket binary messages that start with three [varint][VARINT]-encoded numbers and an optional binary field:
@@ -34,3 +36,4 @@ The message data after the properties is the payload, i.e. the data the client i
 [ASYNC]: https://github.com/robbiehanson/CocoaAsyncSocket
 [HTTPSERVER]: https://github.com/robbiehanson/CocoaHTTPServer
 [VARINT]: https://developers.google.com/protocol-buffers/docs/encoding#varints
+[COCOAWEBSOCKET]: https://github.com/talkative/cocoa-websocket

@@ -4,7 +4,6 @@
 //
 //  Created by Jens Alfke on 9/10/13, based on Robbie Hanson's original code from
 //  https://github.com/robbiehanson/CocoaHTTPServer
-//
 
 #import <Foundation/Foundation.h>
 @class GCDAsyncSocket;
@@ -47,12 +46,12 @@ typedef enum WebSocketCloseCode WebSocketCloseCode;
     If you want to connect to a server, look at WebSocketClient. */
 @interface WebSocket : NSObject
 
-/** Designated initializer */
+/** Designated initializer (for subclasses to call; remember, this class is abstract) */
 - (instancetype) init;
 
 /** Starts a server-side WebSocket on an already-open GCDAsyncSocket. */
-- (id)initWithConnectedSocket: (GCDAsyncSocket*)socket
-                     delegate: (id<WebSocketDelegate>)delegate;
+- (instancetype) initWithConnectedSocket: (GCDAsyncSocket*)socket
+                                delegate: (id<WebSocketDelegate>)delegate;
 
 @property (weak) id<WebSocketDelegate> delegate;
 

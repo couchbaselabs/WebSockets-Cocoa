@@ -99,17 +99,16 @@
 		275930EC17E0B8000078880F /* ExceptionUtils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ExceptionUtils.m; sourceTree = "<group>"; };
 		275930EE17E0C7E90078880F /* libz.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libz.dylib; path = usr/lib/libz.dylib; sourceTree = SDKROOT; };
 		2759310D17E0C8050078880F /* blip */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = blip; sourceTree = BUILT_PRODUCTS_DIR; };
-		2759310F17E0CA850078880F /* blip_main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = blip_main.m; path = ../blip_main.m; sourceTree = "<group>"; };
+		2759310F17E0CA850078880F /* blip_main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = blip_main.m; path = ../Testing/blip_main.m; sourceTree = "<group>"; };
 		2763D72917E809FD0056AB79 /* WebSocketListener.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WebSocketListener.h; sourceTree = "<group>"; };
 		2763D72A17E809FD0056AB79 /* WebSocketListener.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WebSocketListener.m; sourceTree = "<group>"; };
 		2790125D17E20B270056E125 /* BLIP.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = BLIP.h; sourceTree = "<group>"; };
-		2790125F17E229EF0056E125 /* blip_echo.go */ = {isa = PBXFileReference; lastKnownFileType = text; path = blip_echo.go; sourceTree = "<group>"; };
+		2790125F17E229EF0056E125 /* blip_echo.go */ = {isa = PBXFileReference; lastKnownFileType = text; name = blip_echo.go; path = Testing/blip_echo.go; sourceTree = "<group>"; };
 		2790126017E4008D0056E125 /* MYData.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MYData.h; sourceTree = "<group>"; };
 		2790126117E4008D0056E125 /* MYData.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MYData.m; sourceTree = "<group>"; };
 		27A20E2217DF8DAB00F83C71 /* WebSocket */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = WebSocket; sourceTree = BUILT_PRODUCTS_DIR; };
 		27A20E2517DF8DAB00F83C71 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
-		27A20E2817DF8DAB00F83C71 /* websocket_main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = websocket_main.m; sourceTree = "<group>"; };
-		27A20E2B17DF8DAB00F83C71 /* WebSocket-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "WebSocket-Prefix.pch"; sourceTree = "<group>"; };
+		27A20E2817DF8DAB00F83C71 /* websocket_main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = websocket_main.m; path = ../Testing/websocket_main.m; sourceTree = "<group>"; };
 		27A20E3617DF8E0700F83C71 /* WebSocket.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WebSocket.h; sourceTree = "<group>"; };
 		27A20E3717DF8E0700F83C71 /* WebSocket.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WebSocket.m; sourceTree = "<group>"; };
 		27A20E3817DF8E0700F83C71 /* WebSocketClient.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WebSocketClient.h; sourceTree = "<group>"; };
@@ -117,7 +116,7 @@
 		27A20E4817DFC46C00F83C71 /* WebSocket_Internal.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = WebSocket_Internal.h; sourceTree = "<group>"; };
 		27A20E4D17DFC66800F83C71 /* DDData.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DDData.h; sourceTree = "<group>"; };
 		27A20E4E17DFC66800F83C71 /* DDData.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DDData.m; sourceTree = "<group>"; };
-		27A20E5717DFC6C500F83C71 /* ws_echo.go */ = {isa = PBXFileReference; lastKnownFileType = text; path = ws_echo.go; sourceTree = "<group>"; };
+		27A20E5717DFC6C500F83C71 /* ws_echo.go */ = {isa = PBXFileReference; lastKnownFileType = text; name = ws_echo.go; path = Testing/ws_echo.go; sourceTree = "<group>"; };
 		27BEF2AD17DFD78900BA6567 /* CollectionUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CollectionUtils.h; sourceTree = "<group>"; };
 		27BEF2AE17DFD78900BA6567 /* CollectionUtils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CollectionUtils.m; sourceTree = "<group>"; };
 		27BEF2AF17DFD78900BA6567 /* Logging.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Logging.h; sourceTree = "<group>"; };
@@ -239,17 +238,8 @@
 				2763D72A17E809FD0056AB79 /* WebSocketListener.m */,
 				27A20E4817DFC46C00F83C71 /* WebSocket_Internal.h */,
 				27A20E2817DF8DAB00F83C71 /* websocket_main.m */,
-				27A20E2A17DF8DAB00F83C71 /* Supporting Files */,
 			);
 			path = WebSocket;
-			sourceTree = "<group>";
-		};
-		27A20E2A17DF8DAB00F83C71 /* Supporting Files */ = {
-			isa = PBXGroup;
-			children = (
-				27A20E2B17DF8DAB00F83C71 /* WebSocket-Prefix.pch */,
-			);
-			name = "Supporting Files";
 			sourceTree = "<group>";
 		};
 		27A20E4C17DFC66800F83C71 /* Categories */ = {

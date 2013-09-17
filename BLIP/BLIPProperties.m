@@ -3,8 +3,16 @@
 //  WebSocket
 //
 //  Created by Jens Alfke on 5/13/08.
-//  Copyright 2008-2013 Jens Alfke. All rights reserved.
+//  Copyright 2008-2013 Jens Alfke.
+//  Copyright (c) 2013 Couchbase, Inc. All rights reserved.
 //
+//  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file
+//  except in compliance with the License. You may obtain a copy of the License at
+//    http://www.apache.org/licenses/LICENSE-2.0
+//  Unless required by applicable law or agreed to in writing, software distributed under the
+//  License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+//  either express or implied. See the License for the specific language governing permissions
+//  and limitations under the License.
 
 #import "BLIPProperties.h"
 #import "Logging.h"
@@ -45,7 +53,7 @@ static const char* kAbbreviations[] = {
     int _nStrings;
 }
 
-- (id) initWithData: (NSData*)data contents: (MYSlice)contents;
+- (instancetype) initWithData: (NSData*)data contents: (MYSlice)contents;
 
 @end
 
@@ -131,7 +139,7 @@ static const char* kAbbreviations[] = {
 @implementation BLIPPackedProperties
 
 
-- (id) initWithData: (NSData*)data contents: (MYSlice)contents {
+- (instancetype) initWithData: (NSData*)data contents: (MYSlice)contents {
     self = [super init];
     if (self != nil) {
         if (contents.length == 0 || ((const char*)contents.bytes)[contents.length-1] != '\0')
@@ -242,7 +250,7 @@ static const char* kAbbreviations[] = {
     return [[self alloc] initWithDictionary: nil];
 }
 
-- (id) init
+- (instancetype) init
 {
     self = [super init];
     if (self != nil) {
@@ -251,7 +259,7 @@ static const char* kAbbreviations[] = {
     return self;
 }
 
-- (id) initWithDictionary: (NSDictionary*)dict
+- (instancetype) initWithDictionary: (NSDictionary*)dict
 {
     self = [super init];
     if (self != nil) {
@@ -260,7 +268,7 @@ static const char* kAbbreviations[] = {
     return self;
 }
 
-- (id) initWithProperties: (BLIPProperties*)properties
+- (instancetype) initWithProperties: (BLIPProperties*)properties
 {
     return [self initWithDictionary: [properties allProperties]];
 }

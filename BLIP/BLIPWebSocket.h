@@ -3,8 +3,7 @@
 //  WebSocket
 //
 //  Created by Jens Alfke on 4/1/13.
-//
-//
+//  Copyright (c) 2013 Couchbase, Inc. All rights reserved.
 
 #import "WebSocket.h"
 #import "BLIPMessage.h"
@@ -15,8 +14,8 @@
 /** A BLIP connection layered on a WebSocket. */
 @interface BLIPWebSocket : NSObject <BLIPMessageSender>
 
-- (id)initWithURLRequest:(NSURLRequest *)request;
-- (id)initWithURL:(NSURL *)url;
+- (instancetype) initWithURLRequest:(NSURLRequest *)request;
+- (instancetype) initWithURL:(NSURL *)url;
 
 /** Attaches a delegate, and specifies what GCD queue it should be called on. */
 - (void) setDelegate: (id<BLIPWebSocketDelegate>)delegate

@@ -4,7 +4,6 @@
 //
 //  Created by Jens Alfke on 9/10/13.
 //  Copyright (c) 2013 Couchbase. All rights reserved.
-//
 
 #import <Foundation/Foundation.h>
 #import "BLIP.h"
@@ -34,7 +33,7 @@
     CFAbsoluteTime _startTime;
 }
 
-- (id) initWithURL: (NSURL*)url {
+- (instancetype) initWithURL: (NSURL*)url {
     self = [super init];
     if (self) {
         _webSocket = [[BLIPWebSocket alloc] initWithURL: url];

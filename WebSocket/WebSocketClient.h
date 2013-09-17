@@ -3,8 +3,7 @@
 //  WebSocket
 //
 //  Created by Jens Alfke on 9/10/13.
-//
-//
+//  Copyright (c) 2013 Couchbase, Inc. All rights reserved.
 
 #import "WebSocket.h"
 
@@ -15,7 +14,7 @@
 /** Designated initializer.
     The WebSocket's timeout will be set from the timeout of the URL request.
     If the scheme of the URL is "https", default TLS settings will be used. */
-- (id)initWithURLRequest:(NSURLRequest *)request;
+- (instancetype) initWithURLRequest:(NSURLRequest *)request;
 
 /** Convenience initializer that calls -initWithURLRequest using a GET request to the given URL
     with no special HTTP headers and the default timeout. */

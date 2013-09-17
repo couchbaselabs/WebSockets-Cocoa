@@ -4,7 +4,6 @@
 //
 //  Created by Jens Alfke on 9/10/13.
 //  Copyright (c) 2013 Couchbase. All rights reserved.
-//
 
 #import "WebSocket.h"
 #import "GCDAsyncSocket.h"

@@ -3,8 +3,8 @@
 //  WebSocket
 //
 //  Created by Jens Alfke on 5/10/08.
-//  Copyright 2008-2013 Jens Alfke. All rights reserved.
-//
+//  Copyright 2008-2013 Jens Alfke.
+//  Copyright (c) 2013 Couchbase, Inc. All rights reserved.
 
 #import <Foundation/Foundation.h>
 @class BLIPProperties, BLIPMutableProperties, BLIPMessage, BLIPRequest, BLIPResponse;
