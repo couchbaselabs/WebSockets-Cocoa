@@ -44,6 +44,8 @@ enum {
     BOOL _isClient;
 }
 
+@property GCDAsyncSocket* asyncSocket;
+
 - (void) start;
 
 - (void) sendFrame: (NSData*)msgData type: (unsigned)type tag: (long)tag;

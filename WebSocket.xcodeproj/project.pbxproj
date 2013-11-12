@@ -33,7 +33,7 @@
 		2759310717E0C8050078880F /* CoreServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27BEF2BB17DFD86900BA6567 /* CoreServices.framework */; };
 		2759310817E0C8050078880F /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27A20E2517DF8DAB00F83C71 /* Foundation.framework */; };
 		2759310E17E0C8540078880F /* WebSocket.m in Sources */ = {isa = PBXBuildFile; fileRef = 27A20E3717DF8E0700F83C71 /* WebSocket.m */; };
-		2759311117E0CF7A0078880F /* blip_main.m in Sources */ = {isa = PBXBuildFile; fileRef = 2759310F17E0CA850078880F /* blip_main.m */; };
+		2759311117E0CF7A0078880F /* bliptest_main.m in Sources */ = {isa = PBXBuildFile; fileRef = 2759310F17E0CA850078880F /* bliptest_main.m */; };
 		2763D72B17E809FD0056AB79 /* WebSocketListener.m in Sources */ = {isa = PBXBuildFile; fileRef = 2763D72A17E809FD0056AB79 /* WebSocketListener.m */; };
 		2763D72C17E8A8FC0056AB79 /* CollectionUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 27BEF2AE17DFD78900BA6567 /* CollectionUtils.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
 		2763D72D17E8A91C0056AB79 /* Test.m in Sources */ = {isa = PBXBuildFile; fileRef = 27BEF2B217DFD78A00BA6567 /* Test.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
@@ -41,7 +41,7 @@
 		2790125E17E210EB0056E125 /* DDData.m in Sources */ = {isa = PBXBuildFile; fileRef = 27A20E4E17DFC66800F83C71 /* DDData.m */; };
 		2790126217E4008D0056E125 /* MYData.m in Sources */ = {isa = PBXBuildFile; fileRef = 2790126117E4008D0056E125 /* MYData.m */; };
 		27A20E2617DF8DAB00F83C71 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27A20E2517DF8DAB00F83C71 /* Foundation.framework */; };
-		27A20E2917DF8DAB00F83C71 /* websocket_main.m in Sources */ = {isa = PBXBuildFile; fileRef = 27A20E2817DF8DAB00F83C71 /* websocket_main.m */; };
+		27A20E2917DF8DAB00F83C71 /* test_main.m in Sources */ = {isa = PBXBuildFile; fileRef = 27A20E2817DF8DAB00F83C71 /* test_main.m */; };
 		27A20E3B17DF8E0700F83C71 /* WebSocketClient.m in Sources */ = {isa = PBXBuildFile; fileRef = 27A20E3917DF8E0700F83C71 /* WebSocketClient.m */; };
 		27BEF2BC17DFD86900BA6567 /* CoreServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27BEF2BB17DFD86900BA6567 /* CoreServices.framework */; };
 		27BEF2BE17DFD87600BA6567 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27BEF2BD17DFD87600BA6567 /* Security.framework */; };
@@ -99,7 +99,7 @@
 		275930EC17E0B8000078880F /* ExceptionUtils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ExceptionUtils.m; sourceTree = "<group>"; };
 		275930EE17E0C7E90078880F /* libz.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libz.dylib; path = usr/lib/libz.dylib; sourceTree = SDKROOT; };
 		2759310D17E0C8050078880F /* blip */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = blip; sourceTree = BUILT_PRODUCTS_DIR; };
-		2759310F17E0CA850078880F /* blip_main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = blip_main.m; path = ../Testing/blip_main.m; sourceTree = "<group>"; };
+		2759310F17E0CA850078880F /* bliptest_main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = bliptest_main.m; path = ../Testing/bliptest_main.m; sourceTree = "<group>"; };
 		2763D72917E809FD0056AB79 /* WebSocketListener.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WebSocketListener.h; sourceTree = "<group>"; };
 		2763D72A17E809FD0056AB79 /* WebSocketListener.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WebSocketListener.m; sourceTree = "<group>"; };
 		2790125D17E20B270056E125 /* BLIP.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = BLIP.h; sourceTree = "<group>"; };
@@ -108,7 +108,7 @@
 		2790126117E4008D0056E125 /* MYData.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MYData.m; sourceTree = "<group>"; };
 		27A20E2217DF8DAB00F83C71 /* WebSocket */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = WebSocket; sourceTree = BUILT_PRODUCTS_DIR; };
 		27A20E2517DF8DAB00F83C71 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
-		27A20E2817DF8DAB00F83C71 /* websocket_main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = websocket_main.m; path = ../Testing/websocket_main.m; sourceTree = "<group>"; };
+		27A20E2817DF8DAB00F83C71 /* test_main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = test_main.m; path = ../Testing/test_main.m; sourceTree = "<group>"; };
 		27A20E3617DF8E0700F83C71 /* WebSocket.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WebSocket.h; sourceTree = "<group>"; };
 		27A20E3717DF8E0700F83C71 /* WebSocket.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WebSocket.m; sourceTree = "<group>"; };
 		27A20E3817DF8E0700F83C71 /* WebSocketClient.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WebSocketClient.h; sourceTree = "<group>"; };
@@ -186,7 +186,7 @@
 				275930DF17E0B4910078880F /* BLIPRequest+HTTP.m */,
 				275930CE17E0B3FD0078880F /* BLIPHTTPProtocol.h */,
 				275930CF17E0B3FD0078880F /* BLIPHTTPProtocol.m */,
-				2759310F17E0CA850078880F /* blip_main.m */,
+				2759310F17E0CA850078880F /* bliptest_main.m */,
 			);
 			path = BLIP;
 			sourceTree = "<group>";
@@ -237,7 +237,7 @@
 				2763D72917E809FD0056AB79 /* WebSocketListener.h */,
 				2763D72A17E809FD0056AB79 /* WebSocketListener.m */,
 				27A20E4817DFC46C00F83C71 /* WebSocket_Internal.h */,
-				27A20E2817DF8DAB00F83C71 /* websocket_main.m */,
+				27A20E2817DF8DAB00F83C71 /* test_main.m */,
 			);
 			path = WebSocket;
 			sourceTree = "<group>";
@@ -368,7 +368,7 @@
 				275930FF17E0C8050078880F /* ExceptionUtils.m in Sources */,
 				2759310017E0C8050078880F /* Logging.m in Sources */,
 				2759310117E0C8050078880F /* GTMNSData+zlib.m in Sources */,
-				2759311117E0CF7A0078880F /* blip_main.m in Sources */,
+				2759311117E0CF7A0078880F /* bliptest_main.m in Sources */,
 				2759310217E0C8050078880F /* Test.m in Sources */,
 				2759310317E0C8050078880F /* Target.m in Sources */,
 			);
@@ -382,7 +382,7 @@
 				27A20E3B17DF8E0700F83C71 /* WebSocketClient.m in Sources */,
 				275930CA17E037F70078880F /* GCDAsyncSocket.m in Sources */,
 				2790125E17E210EB0056E125 /* DDData.m in Sources */,
-				27A20E2917DF8DAB00F83C71 /* websocket_main.m in Sources */,
+				27A20E2917DF8DAB00F83C71 /* test_main.m in Sources */,
 				2763D72B17E809FD0056AB79 /* WebSocketListener.m in Sources */,
 				2763D72C17E8A8FC0056AB79 /* CollectionUtils.m in Sources */,
 				2763D72E17E8A9340056AB79 /* ExceptionUtils.m in Sources */,
@@ -421,6 +421,7 @@
 				CLANG_WARN_BOOL_CONVERSION = YES;
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
 				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
 				CLANG_WARN_EMPTY_BODY = YES;
 				CLANG_WARN_ENUM_CONVERSION = YES;
 				CLANG_WARN_INT_CONVERSION = YES;
@@ -447,6 +448,7 @@
 				MACOSX_DEPLOYMENT_TARGET = 10.7;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
+				WARNING_CFLAGS = "-Wall";
 			};
 			name = Debug;
 		};
@@ -461,6 +463,7 @@
 				CLANG_WARN_BOOL_CONVERSION = YES;
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
 				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
 				CLANG_WARN_EMPTY_BODY = YES;
 				CLANG_WARN_ENUM_CONVERSION = YES;
 				CLANG_WARN_INT_CONVERSION = YES;
@@ -481,6 +484,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 10.7;
 				SDKROOT = macosx;
+				WARNING_CFLAGS = "-Wall";
 			};
 			name = Release;
 		};

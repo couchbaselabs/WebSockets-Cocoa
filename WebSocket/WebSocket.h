@@ -43,7 +43,8 @@ typedef enum WebSocketCloseCode WebSocketCloseCode;
 
 
 /** Abstract superclass WebSocket implementation.
-    If you want to connect to a server, look at WebSocketClient. */
+    (If you want to connect to a server, look at WebSocketClient.)
+    All methods are thread-safe unless otherwise noted. */
 @interface WebSocket : NSObject
 
 /** Designated initializer (for subclasses to call; remember, this class is abstract) */
@@ -62,7 +63,8 @@ typedef enum WebSocketCloseCode WebSocketCloseCode;
 /** Configures the socket to use TLS/SSL. Settings dict is same as used with CFStream. */
 - (void) useTLS: (NSDictionary*)tlsSettings;
 
-/** Status of the connection (unopened, opening, ...) This is observable. */
+/** Status of the connection (unopened, opening, ...)
+    This is observable, but KVO notifications will be sent on the WebSocket's dispatch queue. */
 @property (readonly) WebSocketState state;
 
 /** Begins an orderly shutdown of the WebSocket connection, with code kWebSocketCloseNormal. */
@@ -77,10 +79,10 @@ typedef enum WebSocketCloseCode WebSocketCloseCode;
 /** Abrupt socket disconnection. Normally you should call -close instead. */
 - (void) disconnect;
 
-/** Sends a text message over the WebSocket. This method is thread-safe. */
+/** Sends a text message over the WebSocket. */
 - (void) sendMessage:(NSString *)msg;
 
-/** Sends a binary message over the WebSocket. This method is thread-safe. */
+/** Sends a binary message over the WebSocket. */
 - (void) sendBinaryMessage:(NSData*)msg;
 
 
@@ -88,9 +90,8 @@ typedef enum WebSocketCloseCode WebSocketCloseCode;
 #pragma mark - UNDER THE HOOD
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-@property GCDAsyncSocket* asyncSocket;
-
-/** The GCD queue the WebSocket and its GCDAsyncSocket run on. */
+/** The GCD queue the WebSocket and its GCDAsyncSocket run on, and delegate methods are called on.
+    This queue is created when the WebSocket is created. Don't use it for anything else. */
 @property (nonatomic, readonly) dispatch_queue_t websocketQueue;
 
 
@@ -114,26 +115,34 @@ typedef enum WebSocketCloseCode WebSocketCloseCode;
 #pragma mark - DELEGATE API
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-/** Delegate API for WebSocket and its subclasses. */
+/** Delegate API for WebSocket and its subclasses.
+    Delegate messages are delivered on the WebSocket's dispatch queue (websocketQueue).
+    Implementations will probably want to re-dispatch to their own queue. */
 @protocol WebSocketDelegate <NSObject>
 @optional
 
 /** Only sent to a WebSocket opened from a WebSocketListener, before -webSocketDidOpen:.
-    @param headers  The HTTP headers in the incoming request
+    This method can determine whether the incoming connection should be accepted.
+    @param request  The incoming HTTP request.
     @return  An HTTP status code: should be 101 to accept, or a value >= 300 to refuse.
-        (As a convenience, any status code < 300 is mapped to 101. Also, if the client want to return a boolean value, YES maps to 101 and NO maps to 403.)*/
+        (As a convenience, any status code < 300 is mapped to 101. Also, if the client wants to return a boolean value, YES maps to 101 and NO maps to 403.)*/
 - (int) webSocket: (WebSocket*)ws shouldAccept: (NSURLRequest*)request;
 
+/** Called when a WebSocket has opened its connection and is ready to send and receive messages. */
 - (void) webSocketDidOpen:(WebSocket *)ws;
 
+/** Called when a WebSocket receives a textual message from its peer. */
 - (void) webSocket:(WebSocket *)ws
          didReceiveMessage:(NSString *)msg;
 
+/** Called when a WebSocket receives a binary message from its peer. */
 - (void) webSocket:(WebSocket *)ws
          didReceiveBinaryMessage:(NSData *)msg;
 
+/** Called when the WebSocket has finished sending all queued messages and is ready for more. */
 - (void) webSocketIsHungry:(WebSocket *)ws;
 
+/** Called after the WebSocket closes, either intentionally or due to an error. */
 - (void) webSocket:(WebSocket *)ws
          didCloseWithCode: (WebSocketCloseCode)code
                    reason: (NSString*)reason;

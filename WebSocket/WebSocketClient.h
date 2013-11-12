@@ -23,6 +23,7 @@
 /** Once the request has been customized, call this to open the connection. */
 - (BOOL) connect: (NSError**)outError;
 
+/** The URL this WebSocket connects to. */
 @property (readonly) NSURL* URL;
 
 @end
