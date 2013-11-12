@@ -185,7 +185,7 @@ static NSData* kTerminator;
 	return result;
 }
 
-- (void)setDelegate:(id)newDelegate {
+- (void)setDelegate:(id<WebSocketDelegate>)newDelegate {
 	dispatch_async(_websocketQueue, ^{
 		_delegate = newDelegate;
 	});
@@ -272,8 +272,9 @@ static NSData* kTerminator;
                        withTimeout: _timeout
                                tag: (_isRFC6455 ? TAG_PAYLOAD_PREFIX : TAG_PREFIX)];
 	// Notify delegate
-	if ([_delegate respondsToSelector:@selector(webSocketDidOpen:)]) {
-		[_delegate webSocketDidOpen:self];
+    id<WebSocketDelegate> delegate = _delegate;
+	if ([delegate respondsToSelector:@selector(webSocketDidOpen:)]) {
+		[delegate webSocketDidOpen:self];
 	}
 }
 
@@ -286,8 +287,9 @@ static NSData* kTerminator;
 	// Don't forget to invoke [super didClose] at the end of your method.
 
 	// Notify delegate
-	if ([_delegate respondsToSelector:@selector(webSocket:didCloseWithCode:reason:)]) {
-		[_delegate webSocket:self didCloseWithCode: code reason: reason];
+    id<WebSocketDelegate> delegate = _delegate;
+	if ([delegate respondsToSelector:@selector(webSocket:didCloseWithCode:reason:)]) {
+		[delegate webSocket:self didCloseWithCode: code reason: reason];
 	}
 }
 
@@ -313,7 +315,7 @@ static NSData* kTerminator;
 	
 	if (_isRFC6455) {
         // Framing format: http://tools.ietf.org/html/rfc6455#section-5.2
-        UInt8 header[14] = {(0x80 | type) /*, 0x00...*/};
+        UInt8 header[14] = {(0x80 | (UInt8)type) /*, 0x00...*/};
         NSUInteger headerLen;
 
 		NSUInteger length = msgData.length;
@@ -322,7 +324,7 @@ static NSData* kTerminator;
             headerLen = 2;
 		} else if (length <= 0xFFFF) {
             header[1] = 0x7E;
-            UInt16 bigLen = NSSwapHostShortToBig(length);
+            UInt16 bigLen = NSSwapHostShortToBig((UInt16)length);
             memcpy(&header[2], &bigLen, sizeof(bigLen));
 			headerLen = 4;
 		} else {
@@ -375,8 +377,9 @@ static NSData* kTerminator;
 - (void) isHungry {
 	HTTPLogTrace();
 	// Notify delegate
-	if ([_delegate respondsToSelector:@selector(webSocketIsHungry:)])
-		[_delegate webSocketIsHungry:self];
+    id<WebSocketDelegate> delegate = _delegate;
+	if ([delegate respondsToSelector:@selector(webSocketIsHungry:)])
+		[delegate webSocketIsHungry:self];
 }
 
 #pragma mark - RECEIVING MESSAGES:
@@ -423,8 +426,9 @@ static NSData* kTerminator;
 	// For completeness, you should invoke [super didReceiveMessage:msg] in your method.
 
 	// Notify delegate
-	if ([_delegate respondsToSelector:@selector(webSocket:didReceiveMessage:)]) {
-		[_delegate webSocket:self didReceiveMessage:msg];
+    id<WebSocketDelegate> delegate = _delegate;
+	if ([delegate respondsToSelector:@selector(webSocket:didReceiveMessage:)]) {
+		[delegate webSocket:self didReceiveMessage:msg];
 	}
 }
 
@@ -437,8 +441,9 @@ static NSData* kTerminator;
 	// For completeness, you should invoke [super didReceiveBinaryMessage:msg] in your method.
 
 	// Notify delegate
-	if ([_delegate respondsToSelector:@selector(webSocket:didReceiveBinaryMessage:)]) {
-		[_delegate webSocket:self didReceiveBinaryMessage:msg];
+    id<WebSocketDelegate> delegate = _delegate;
+	if ([delegate respondsToSelector:@selector(webSocket:didReceiveBinaryMessage:)]) {
+		[delegate webSocket:self didReceiveBinaryMessage:msg];
 	}
 }
 

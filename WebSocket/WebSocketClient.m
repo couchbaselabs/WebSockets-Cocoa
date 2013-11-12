@@ -55,7 +55,7 @@
         GCDAsyncSocket* socket = [[GCDAsyncSocket alloc] initWithDelegate: self
                                                             delegateQueue: _websocketQueue];
         if (![socket connectToHost: url.host
-                            onPort: (url.port.intValue ?: 80)
+                            onPort: (UInt16)(url.port.intValue ?: 80)
                        withTimeout: self.timeout
                              error: outError]) {
             return;
@@ -151,7 +151,8 @@ static BOOL checkHeader(CFHTTPMessageRef msg, NSString* header, NSString* expect
     if (httpStatus != 101) {
         // TODO: Handle other responses, i.e. 401 or 30x
         NSString* reason = CFBridgingRelease(CFHTTPMessageCopyResponseStatusLine(httpResponse));
-        [self didCloseWithCode: (httpStatus < 1000 ? httpStatus : kWebSocketClosePolicyError)
+        [self didCloseWithCode: (httpStatus < 1000 ? (WebSocketCloseCode)httpStatus
+                                                   : kWebSocketClosePolicyError)
                         reason: reason];
         return;
     } else if (!checkHeader(httpResponse, @"Connection", @"Upgrade", NO)) {
