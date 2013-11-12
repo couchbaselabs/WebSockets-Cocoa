@@ -32,7 +32,7 @@
 - (instancetype) initWithURLRequest:(NSURLRequest *)urlRequest {
     self = [super init];
     if (self) {
-        _urlRequest = urlRequest;
+        _urlRequest = [urlRequest copy];
         _isClient = YES;
         self.timeout = urlRequest.timeoutInterval;
         if ([urlRequest.URL.scheme caseInsensitiveCompare: @"https"] == 0)
@@ -49,18 +49,22 @@
 - (BOOL) connect: (NSError**)outError {
     NSParameterAssert(!_asyncSocket);
 
-    NSURL* url = _urlRequest.URL;
-    GCDAsyncSocket* socket = [[GCDAsyncSocket alloc] initWithDelegate: self
-                                                        delegateQueue: _websocketQueue];
-    if (![socket connectToHost: url.host
-                        onPort: (url.port.intValue ?: 80)
-                   withTimeout: self.timeout
-                         error: outError]) {
-        return NO;
-    }
-    self.asyncSocket = socket;
-    [super start];
-    return YES;
+    __block BOOL result = NO;
+	dispatch_sync(_websocketQueue, ^{
+        NSURL* url = _urlRequest.URL;
+        GCDAsyncSocket* socket = [[GCDAsyncSocket alloc] initWithDelegate: self
+                                                            delegateQueue: _websocketQueue];
+        if (![socket connectToHost: url.host
+                            onPort: (url.port.intValue ?: 80)
+                       withTimeout: self.timeout
+                             error: outError]) {
+            return;
+        }
+        self.asyncSocket = socket;
+        [super start];
+        result = YES;
+    });
+    return result;
 }
 
 
@@ -121,6 +125,7 @@
 }
 
 
+// Tests whether a header value matches the expected string.
 static BOOL checkHeader(CFHTTPMessageRef msg, NSString* header, NSString* expected, BOOL caseSens) {
     NSString* value;
     value = CFBridgingRelease(CFHTTPMessageCopyHeaderFieldValue(msg, (__bridge CFStringRef)header));

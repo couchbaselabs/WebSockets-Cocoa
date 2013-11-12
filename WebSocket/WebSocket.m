@@ -24,7 +24,7 @@
 #warning This file must be compiled with ARC. Use -fobjc-arc flag (or convert project to ARC).
 #endif
 
-// Does ARC support support GCD objects?
+// Does ARC support GCD objects?
 // It does if the minimum deployment target is iOS 6+ or Mac OS X 8+
 
 #if TARGET_OS_IPHONE
@@ -192,7 +192,9 @@ static NSData* kTerminator;
 }
 
 - (void) useTLS: (NSDictionary*)tlsSettings {
-    _tlsSettings = tlsSettings;
+	dispatch_async(_websocketQueue, ^{
+        _tlsSettings = tlsSettings;
+    });
 }
 
 
