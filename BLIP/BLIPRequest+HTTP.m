@@ -42,6 +42,7 @@ static NSSet* kIgnoredHeaders;
     CFHTTPMessageSetBody(msg, (__bridge CFDataRef)req.HTTPBody);
 
     NSData* body = CFBridgingRelease(CFHTTPMessageCopySerializedMessage(msg));
+    CFRelease(msg);
     return [self requestWithBody: body
                       properties: @{@"Profile": @"HTTP"}];
 }
@@ -88,6 +89,7 @@ static NSSet* kIgnoredHeaders;
     CFHTTPMessageSetBody(msg, (__bridge CFDataRef)httpBody);
     self.profile = @"HTTP";
     self.body = CFBridgingRelease(CFHTTPMessageCopySerializedMessage(msg));
+    CFRelease(msg);
 }
 
 
