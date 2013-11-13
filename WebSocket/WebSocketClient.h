@@ -26,4 +26,7 @@
 /** The URL this WebSocket connects to. */
 @property (readonly) NSURL* URL;
 
+/** Authentication credential. */
+@property NSURLCredential* credential;
+
 @end

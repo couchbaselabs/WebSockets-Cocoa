@@ -15,6 +15,7 @@
 
 #import "WebSocketClient.h"
 #import "WebSocket_Internal.h"
+#import "WebSocketHTTPLogic.h"
 #import "GCDAsyncSocket.h"
 #import "DDData.h"
 
@@ -23,20 +24,22 @@
 
 @implementation WebSocketClient
 {
-    NSURLRequest* _urlRequest;
+    WebSocketHTTPLogic *_logic;
     NSArray* _protocols;
     NSString* _nonceKey;
 }
 
 
+@synthesize credential=_credential;
+
+
 - (instancetype) initWithURLRequest:(NSURLRequest *)urlRequest {
     self = [super init];
     if (self) {
-        _urlRequest = [urlRequest copy];
         _isClient = YES;
+        _logic = [[WebSocketHTTPLogic alloc] initWithURLRequest: urlRequest];
+        _logic.handleRedirects = YES;
         self.timeout = urlRequest.timeoutInterval;
-        if ([urlRequest.URL.scheme caseInsensitiveCompare: @"https"] == 0)
-           [self useTLS: @{}];  // default TLS settings
     }
     return self;
 }
@@ -51,9 +54,14 @@
 
     __block BOOL result = NO;
 	dispatch_sync(_websocketQueue, ^{
-        NSURL* url = _urlRequest.URL;
+        NSURL* url = _logic.URL;
         GCDAsyncSocket* socket = [[GCDAsyncSocket alloc] initWithDelegate: self
                                                             delegateQueue: _websocketQueue];
+        NSDictionary* tlsSettings = nil;
+        if ([self.URL.scheme caseInsensitiveCompare: @"https"] == 0)
+            tlsSettings = @{};  // default TLS settings
+        [self useTLS: tlsSettings];
+
         if (![socket connectToHost: url.host
                             onPort: (UInt16)(url.port.intValue ?: 80)
                        withTimeout: self.timeout
@@ -69,7 +77,7 @@
 
 
 - (NSURL*) URL {
-    return _urlRequest.URL;
+    return _logic.URL;
 }
 
 
@@ -83,56 +91,29 @@
     // HTTP response. I do *not* call [super didOpen] until I receive the response, because the
     // WebSocket isn't ready for business till then.
 
-    // Create the "Host" header:
-    NSURL* url = _urlRequest.URL;
-    NSString* host = url.host;
-    if (url.port)
-        host = [host stringByAppendingFormat: @":%@", url.port];
-
     // Configure the nonce/key for the request:
     uint8_t nonceBytes[16];
     SecRandomCopyBytes(kSecRandomDefault, sizeof(nonceBytes), nonceBytes);
     NSData* nonceData = [NSData dataWithBytes: nonceBytes length: sizeof(nonceBytes)];
     _nonceKey = [nonceData base64Encoded];
 
-    // http://tools.ietf.org/html/rfc6455#section-4.1
-    CFHTTPMessageRef httpMsg = CFHTTPMessageCreateRequest(NULL, CFSTR("GET"),
-                                                          (__bridge CFURLRef)url,
-                                                          kCFHTTPVersion1_1);
-    NSMutableDictionary* headers = _urlRequest.allHTTPHeaderFields.mutableCopy;
-    if (!headers)
-        headers = [NSMutableDictionary dictionary];
-    headers[@"Host"] = host;
-    headers[@"Connection"] = @"Upgrade";
-    headers[@"Upgrade"] = @"websocket";
-    headers[@"Sec-WebSocket-Version"] = @"13";
-    headers[@"Sec-WebSocket-Key"] = _nonceKey;
+    _logic[@"Connection"] = @"Upgrade";
+    _logic[@"Upgrade"] = @"websocket";
+    _logic[@"Sec-WebSocket-Version"] = @"13";
+    _logic[@"Sec-WebSocket-Key"] = _nonceKey;
     if (_protocols)
-        headers[@"Sec-WebSocket-Protocol"] = [_protocols componentsJoinedByString: @","];
-    for (NSString* header in headers)
-        CFHTTPMessageSetHeaderFieldValue(httpMsg, (__bridge CFStringRef)header,
-                                                  (__bridge CFStringRef)headers[header]);
+        _logic[@"Sec-WebSocket-Protocol"] = [_protocols componentsJoinedByString: @","];
 
+    CFHTTPMessageRef httpMsg = [_logic newHTTPRequest];
     NSData* requestData = CFBridgingRelease(CFHTTPMessageCopySerializedMessage(httpMsg));
     CFRelease(httpMsg);
     
-    NSLog(@"Sending HTTP request:\n%@", [[NSString alloc] initWithData: requestData encoding:NSUTF8StringEncoding]);
+    //NSLog(@"Sending HTTP request:\n%@", [[NSString alloc] initWithData: requestData encoding:NSUTF8StringEncoding]);
     [_asyncSocket writeData: requestData withTimeout: self.timeout
                         tag: TAG_HTTP_REQUEST_HEADERS];
     [_asyncSocket readDataToData: [@"\r\n\r\n" dataUsingEncoding: NSASCIIStringEncoding]
                      withTimeout: self.timeout
                              tag: TAG_HTTP_RESPONSE_HEADERS];
-}
-
-
-// Tests whether a header value matches the expected string.
-static BOOL checkHeader(CFHTTPMessageRef msg, NSString* header, NSString* expected, BOOL caseSens) {
-    NSString* value;
-    value = CFBridgingRelease(CFHTTPMessageCopyHeaderFieldValue(msg, (__bridge CFStringRef)header));
-    if (caseSens)
-        return [value isEqualToString: expected];
-    else
-        return value && [value caseInsensitiveCompare: expected] == 0;
 }
 
 
@@ -147,12 +128,19 @@ static BOOL checkHeader(CFHTTPMessageRef msg, NSString* header, NSString* expect
         return;
     }
 
-    CFIndex httpStatus = CFHTTPMessageGetResponseStatusCode(httpResponse);
+    [_logic receivedResponse: httpResponse];
+    if (_logic.shouldRetry) {
+        // Retry the connection, due to a redirect or auth challenge:
+        [self disconnect];
+        [self connect: NULL];
+        return;
+    }
+
+    NSInteger httpStatus = _logic.httpStatus;
     if (httpStatus != 101) {
-        // TODO: Handle other responses, i.e. 401 or 30x
         NSString* reason = CFBridgingRelease(CFHTTPMessageCopyResponseStatusLine(httpResponse));
         [self didCloseWithCode: (httpStatus < 1000 ? (WebSocketCloseCode)httpStatus
-                                                   : kWebSocketClosePolicyError)
+                                 : kWebSocketClosePolicyError)
                         reason: reason];
         return;
     } else if (!checkHeader(httpResponse, @"Connection", @"Upgrade", NO)) {
@@ -191,6 +179,17 @@ static BOOL checkHeader(CFHTTPMessageRef msg, NSString* header, NSString* expect
     } else {
         [super socket: sock didReadData: data withTag: tag];
     }
+}
+
+
+// Tests whether a header value matches the expected string.
+static BOOL checkHeader(CFHTTPMessageRef msg, NSString* header, NSString* expected, BOOL caseSens) {
+    NSString* value = CFBridgingRelease(CFHTTPMessageCopyHeaderFieldValue(msg,
+                                                                  (__bridge CFStringRef)header));
+    if (caseSens)
+        return [value isEqualToString: expected];
+    else
+        return value && [value caseInsensitiveCompare: expected] == 0;
 }
 
 

@@ -10,6 +10,7 @@
 		2711FE8117E65B350055E311 /* BLIPResponse.m in Sources */ = {isa = PBXBuildFile; fileRef = 2711FE8017E65B350055E311 /* BLIPResponse.m */; };
 		2711FE8317E7AD9B0055E311 /* Logging.m in Sources */ = {isa = PBXBuildFile; fileRef = 27BEF2B017DFD78900BA6567 /* Logging.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
 		2711FE8617E7B2870055E311 /* BLIPPool.m in Sources */ = {isa = PBXBuildFile; fileRef = 2711FE8517E7B2870055E311 /* BLIPPool.m */; };
+		272401C31860D0600080E082 /* WebSocketHTTPLogic.m in Sources */ = {isa = PBXBuildFile; fileRef = 272401C21860D0600080E082 /* WebSocketHTTPLogic.m */; };
 		275930CA17E037F70078880F /* GCDAsyncSocket.m in Sources */ = {isa = PBXBuildFile; fileRef = 275930C917E037F70078880F /* GCDAsyncSocket.m */; };
 		275930F217E0C8050078880F /* BLIPRequest+HTTP.m in Sources */ = {isa = PBXBuildFile; fileRef = 275930DF17E0B4910078880F /* BLIPRequest+HTTP.m */; };
 		275930F317E0C8050078880F /* GCDAsyncSocket.m in Sources */ = {isa = PBXBuildFile; fileRef = 275930C917E037F70078880F /* GCDAsyncSocket.m */; };
@@ -74,6 +75,8 @@
 		2711FE8217E7A4420055E311 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = text; path = README.md; sourceTree = "<group>"; };
 		2711FE8417E7B2870055E311 /* BLIPPool.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BLIPPool.h; sourceTree = "<group>"; };
 		2711FE8517E7B2870055E311 /* BLIPPool.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = BLIPPool.m; sourceTree = "<group>"; };
+		272401C11860D0600080E082 /* WebSocketHTTPLogic.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WebSocketHTTPLogic.h; sourceTree = "<group>"; };
+		272401C21860D0600080E082 /* WebSocketHTTPLogic.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WebSocketHTTPLogic.m; sourceTree = "<group>"; };
 		275930C817E037F70078880F /* GCDAsyncSocket.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = GCDAsyncSocket.h; path = GCD/GCDAsyncSocket.h; sourceTree = "<group>"; };
 		275930C917E037F70078880F /* GCDAsyncSocket.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = GCDAsyncSocket.m; path = GCD/GCDAsyncSocket.m; sourceTree = "<group>"; };
 		275930CC17E0B3FD0078880F /* BLIPDispatcher.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BLIPDispatcher.h; sourceTree = "<group>"; };
@@ -237,6 +240,8 @@
 				2763D72917E809FD0056AB79 /* WebSocketListener.h */,
 				2763D72A17E809FD0056AB79 /* WebSocketListener.m */,
 				27A20E4817DFC46C00F83C71 /* WebSocket_Internal.h */,
+				272401C11860D0600080E082 /* WebSocketHTTPLogic.h */,
+				272401C21860D0600080E082 /* WebSocketHTTPLogic.m */,
 				27A20E2817DF8DAB00F83C71 /* test_main.m */,
 			);
 			path = WebSocket;
@@ -387,6 +392,7 @@
 				2763D72C17E8A8FC0056AB79 /* CollectionUtils.m in Sources */,
 				2763D72E17E8A9340056AB79 /* ExceptionUtils.m in Sources */,
 				2711FE8317E7AD9B0055E311 /* Logging.m in Sources */,
+				272401C31860D0600080E082 /* WebSocketHTTPLogic.m in Sources */,
 				2763D72D17E8A91C0056AB79 /* Test.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
