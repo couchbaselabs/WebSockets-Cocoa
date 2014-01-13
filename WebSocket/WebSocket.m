@@ -19,6 +19,7 @@
 #import "WebSocket_Internal.h"
 #import "GCDAsyncSocket.h"
 #import <Security/SecRandom.h>
+@class HTTPMessage;
 
 #if ! __has_feature(objc_arc)
 #warning This file must be compiled with ARC. Use -fobjc-arc flag (or convert project to ARC).
@@ -126,6 +127,11 @@ static NSData* kTerminator;
 + (void) initialize {
     if (!kTerminator)
         kTerminator = [[NSData alloc] initWithBytes:"\xFF" length:1];
+}
+
+// For compatibility with the WebSocket class in the CocoaHTTPServer library
++ (BOOL)isWebSocketRequest:(HTTPMessage *)request {
+    return NO;
 }
 
 - (instancetype) init {
