@@ -110,6 +110,14 @@
             _responseMsg = NULL;
         }
     }
+
+    NSData* body = _urlRequest.HTTPBody;
+    if (body) {
+        CFHTTPMessageSetHeaderFieldValue(httpMsg, CFSTR("Content-Length"),
+                                         (__bridge CFStringRef)[@(body.length) description]);
+        CFHTTPMessageSetBody(httpMsg, (__bridge CFDataRef)body);
+    }
+
     _authorizationHeader = getHeader(httpMsg, @"Authorization");
     _shouldContinue = _shouldRetry = NO;
     _httpStatus = 0;
