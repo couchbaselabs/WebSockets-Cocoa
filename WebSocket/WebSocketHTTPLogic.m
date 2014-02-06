@@ -8,6 +8,8 @@
 
 #import "WebSocketHTTPLogic.h"
 #import "DDData.h"
+#import "Logging.h"
+#import "Test.h"
 #import "MYURLUtils.h"
 
 
