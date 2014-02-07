@@ -138,10 +138,11 @@
 
     NSInteger httpStatus = _logic.httpStatus;
     if (httpStatus != 101) {
+        WebSocketCloseCode closeCode = kWebSocketClosePolicyError;
+        if (httpStatus >= 300 && httpStatus < 1000)
+            closeCode = (WebSocketCloseCode)httpStatus;
         NSString* reason = CFBridgingRelease(CFHTTPMessageCopyResponseStatusLine(httpResponse));
-        [self didCloseWithCode: (httpStatus < 1000 ? (WebSocketCloseCode)httpStatus
-                                 : kWebSocketClosePolicyError)
-                        reason: reason];
+        [self didCloseWithCode: closeCode reason: reason];
         return;
     } else if (!checkHeader(httpResponse, @"Connection", @"Upgrade", NO)) {
         [self didCloseWithCode: kWebSocketCloseProtocolError
