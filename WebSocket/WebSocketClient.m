@@ -24,6 +24,7 @@
 
 @implementation WebSocketClient
 {
+    GCDAsyncSocket* _httpSocket;
     WebSocketHTTPLogic *_logic;
     NSArray* _protocols;
     NSString* _nonceKey;
@@ -48,31 +49,10 @@
     return [self initWithURLRequest: [NSURLRequest requestWithURL: url]];
 }
 
-
-- (BOOL) connect: (NSError**)outError {
-    NSParameterAssert(!_asyncSocket);
-
-    __block BOOL result = NO;
-	dispatch_sync(_websocketQueue, ^{
-        NSURL* url = _logic.URL;
-        GCDAsyncSocket* socket = [[GCDAsyncSocket alloc] initWithDelegate: self
-                                                            delegateQueue: _websocketQueue];
-        NSDictionary* tlsSettings = nil;
-        if ([self.URL.scheme caseInsensitiveCompare: @"https"] == 0)
-            tlsSettings = @{};  // default TLS settings
-        [self useTLS: tlsSettings];
-
-        if (![socket connectToHost: url.host
-                            onPort: (UInt16)(url.port.intValue ?: 80)
-                       withTimeout: self.timeout
-                             error: outError]) {
-            return;
-        }
-        self.asyncSocket = socket;
-        [super start];
-        result = YES;
-    });
-    return result;
+- (void)dealloc {
+    HTTPLogTrace();
+    [_httpSocket setDelegate:nil delegateQueue:NULL];
+    [_httpSocket disconnect];
 }
 
 
@@ -81,15 +61,33 @@
 }
 
 
-#pragma mark - CONNECTION:
+- (BOOL) connect: (NSError**)outError {
+    __block BOOL result = NO;
+	dispatch_sync(_websocketQueue, ^{
+        result = [self _connect: outError];
+    });
+    return result;
+}
 
 
-- (void) didOpen {
+// called on the _websocketQueue
+- (BOOL) _connect: (NSError**)outError {
     HTTPLogTrace();
+    NSParameterAssert(!_asyncSocket);
+    NSParameterAssert(!_httpSocket);
+    NSURL* url = _logic.URL;
+    _httpSocket = [[GCDAsyncSocket alloc] initWithDelegate: self
+                                             delegateQueue: _websocketQueue];
+    [_httpSocket setDelegate:self delegateQueue:_websocketQueue];
+    if ([url.scheme caseInsensitiveCompare: @"https"] == 0)
+        [_httpSocket startTLS: @{}];
 
-    // Now that the underlying socket has opened, send the HTTP request and wait for the
-    // HTTP response. I do *not* call [super didOpen] until I receive the response, because the
-    // WebSocket isn't ready for business till then.
+    if (![_httpSocket connectToHost: url.host
+                             onPort: (UInt16)(url.port ?url.port.intValue : 80)
+                        withTimeout: self.timeout
+                              error: outError]) {
+        return NO;
+    }
 
     // Configure the nonce/key for the request:
     uint8_t nonceBytes[16];
@@ -97,6 +95,7 @@
     NSData* nonceData = [NSData dataWithBytes: nonceBytes length: sizeof(nonceBytes)];
     _nonceKey = [nonceData base64Encoded];
 
+    // Construct the HTTP request:
     _logic[@"Connection"] = @"Upgrade";
     _logic[@"Upgrade"] = @"websocket";
     _logic[@"Sec-WebSocket-Version"] = @"13";
@@ -107,16 +106,19 @@
     CFHTTPMessageRef httpMsg = [_logic newHTTPRequest];
     NSData* requestData = CFBridgingRelease(CFHTTPMessageCopySerializedMessage(httpMsg));
     CFRelease(httpMsg);
-    
+
+    // Send the request and await the response:
     //NSLog(@"Sending HTTP request:\n%@", [[NSString alloc] initWithData: requestData encoding:NSUTF8StringEncoding]);
-    [_asyncSocket writeData: requestData withTimeout: self.timeout
+    [_httpSocket writeData: requestData withTimeout: self.timeout
                         tag: TAG_HTTP_REQUEST_HEADERS];
-    [_asyncSocket readDataToData: [@"\r\n\r\n" dataUsingEncoding: NSASCIIStringEncoding]
+    [_httpSocket readDataToData: [@"\r\n\r\n" dataUsingEncoding: NSASCIIStringEncoding]
                      withTimeout: self.timeout
                              tag: TAG_HTTP_RESPONSE_HEADERS];
+    return YES;
 }
 
 
+// called on the _websocketQueue
 - (void) gotHTTPResponse: (CFHTTPMessageRef)httpResponse data: (NSData*)responseData {
     HTTPLogTrace();
     //NSLog(@"Got HTTP response:\n%@", [[NSString alloc] initWithData: responseData encoding:NSUTF8StringEncoding]);
@@ -131,8 +133,10 @@
     [_logic receivedResponse: httpResponse];
     if (_logic.shouldRetry) {
         // Retry the connection, due to a redirect or auth challenge:
-        [self disconnect];
-        [self connect: NULL];
+        [_httpSocket setDelegate:nil delegateQueue:NULL];
+        [_httpSocket disconnect];
+        _httpSocket = nil;
+        [self _connect: NULL];
         return;
     }
 
@@ -166,17 +170,22 @@
 
     // TODO: Check Sec-WebSocket-Extensions for unknown extensions
 
-    // Now I can finally tell the delegate I'm open (see explanation in my -didOpen method.)
-    [super didOpen];
+    // Now I can hook up the socket as my asyncSocket and start the WebSocket protocol:
+    _asyncSocket = _httpSocket;
+    _httpSocket = nil;
+    [self start];
 }
 
 
+// called on the _websocketQueue
 - (void)socket:(GCDAsyncSocket *)sock didReadData:(NSData *)data withTag:(long)tag {
-    if (tag == TAG_HTTP_RESPONSE_HEADERS) {
-        // HTTP response received:
-        CFHTTPMessageRef httpResponse = CFHTTPMessageCreateEmpty(NULL, false);
-        [self gotHTTPResponse: httpResponse data: data];
-        CFRelease(httpResponse);
+    if (sock == _httpSocket) {
+        if (tag == TAG_HTTP_RESPONSE_HEADERS) {
+            // HTTP response received:
+            CFHTTPMessageRef httpResponse = CFHTTPMessageCreateEmpty(NULL, false);
+            [self gotHTTPResponse: httpResponse data: data];
+            CFRelease(httpResponse);
+        }
     } else {
         [super socket: sock didReadData: data withTag: tag];
     }

@@ -22,11 +22,26 @@
 #define WS_OP_PING                 9
 #define WS_OP_PONG                 10
 
-#define HTTPLogTrace() LogTo(@"WS", @"TRACE: %s", __func__ )
-#define HTTPLogTraceWith(MSG, PARAM...) LogTo(@"WS", @"TRACE: %s " MSG, __func__, PARAM)
+#define HTTPLogTrace() LogTo(WS, @"TRACE: %s", __func__ )
+#define HTTPLogTraceWith(MSG, PARAM...) LogTo(WS, @"TRACE: %s " MSG, __func__, PARAM)
 
 enum {
-    TAG_HTTP_REQUEST_HEADERS = 300,
+    // Tags for reads:
+    TAG_PREFIX = 300,
+    TAG_MSG_PLUS_SUFFIX,
+    TAG_MSG_WITH_LENGTH,
+    TAG_MSG_MASKING_KEY,
+    TAG_PAYLOAD_PREFIX,
+    TAG_PAYLOAD_LENGTH,
+    TAG_PAYLOAD_LENGTH16,
+    TAG_PAYLOAD_LENGTH64,
+
+    // Tags for writes:
+    TAG_MESSAGE = 400,
+    TAG_STOP,
+
+    // Tags for WebSocketClient initial HTTP handshake:
+    TAG_HTTP_REQUEST_HEADERS = 500,
     TAG_HTTP_RESPONSE_HEADERS,
 };
 

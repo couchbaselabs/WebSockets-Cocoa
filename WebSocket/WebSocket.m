@@ -53,23 +53,6 @@
 #define TIMEOUT_NONE          -1
 #define TIMEOUT_REQUEST_BODY  10
 
-// Tags for reads:
-//#define TAG_HTTP_REQUEST_BODY      100
-//#define TAG_HTTP_RESPONSE_HEADERS  200
-//#define TAG_HTTP_RESPONSE_BODY     201
-#define TAG_PREFIX                 300
-#define TAG_MSG_PLUS_SUFFIX        301
-#define TAG_MSG_WITH_LENGTH        302
-#define TAG_MSG_MASKING_KEY        303
-#define TAG_PAYLOAD_PREFIX         304
-#define TAG_PAYLOAD_LENGTH         305
-#define TAG_PAYLOAD_LENGTH16       306
-#define TAG_PAYLOAD_LENGTH64       307
-
-// Tags for writes:
-#define TAG_MESSAGE                 400
-#define TAG_STOP                    401
-
 #define HUNGRY_SIZE 5
 
 static inline BOOL WS_OP_IS_FINAL_FRAGMENT(UInt8 frame) {
