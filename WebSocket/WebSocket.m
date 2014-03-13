@@ -492,19 +492,23 @@ static NSData* kTerminator;
 			[self didCloseWithCode: kWebSocketCloseProtocolError
                             reason: @"Invalid incoming frame"];
 		}
-	}
-	 else if (tag == TAG_PAYLOAD_LENGTH) {
+	} else if (tag == TAG_PAYLOAD_LENGTH) {
 		UInt8 frame = *(UInt8 *)[data bytes];
 		BOOL masked = WS_PAYLOAD_IS_MASKED(frame);
 		NSUInteger length = WS_PAYLOAD_LENGTH(frame);
 		_nextFrameMasked = masked;
 		_maskingKey = nil;
-		if (length <= 125) {
+        if (length <= 125) {
 			if (_nextFrameMasked)
 			{
 				[_asyncSocket readDataToLength:4 withTimeout:_timeout tag:TAG_MSG_MASKING_KEY];
 			}
-			[_asyncSocket readDataToLength:length withTimeout:_timeout tag:TAG_MSG_WITH_LENGTH];
+            if (length > 0) {
+                [_asyncSocket readDataToLength:length withTimeout:_timeout tag:TAG_MSG_WITH_LENGTH];
+            } else {
+                // Special case: zero-length payload doesn't need any read call at all
+                [self socket: sock didReadData: [NSData data] withTag: TAG_MSG_WITH_LENGTH];
+            }
 		} else if (length == 126) {
 			[_asyncSocket readDataToLength:2 withTimeout:_timeout tag:TAG_PAYLOAD_LENGTH16];
 		} else {
