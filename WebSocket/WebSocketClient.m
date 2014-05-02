@@ -79,15 +79,15 @@
     _httpSocket = [[GCDAsyncSocket alloc] initWithDelegate: self
                                              delegateQueue: _websocketQueue];
     [_httpSocket setDelegate:self delegateQueue:_websocketQueue];
-    if ([url.scheme caseInsensitiveCompare: @"https"] == 0)
-        [_httpSocket startTLS: @{}];
-
     if (![_httpSocket connectToHost: url.host
                              onPort: (UInt16)(url.port ?url.port.intValue : 80)
                         withTimeout: self.timeout
                               error: outError]) {
         return NO;
     }
+
+    if ([url.scheme caseInsensitiveCompare: @"https"] == 0)
+        [_httpSocket startTLS: @{(id)kCFStreamSSLPeerName: url.host}];
 
     // Configure the nonce/key for the request:
     uint8_t nonceBytes[16];
