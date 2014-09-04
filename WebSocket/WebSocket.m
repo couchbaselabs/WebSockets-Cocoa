@@ -79,6 +79,9 @@ static inline void maskBytes(NSMutableData* data, NSUInteger offset, NSUInteger 
 }
 
 
+NSString* const WebSocketErrorDomain = @"WebSocket";
+
+
 @interface WebSocket ()
 @property (readwrite) WebSocketState state;
 @end
@@ -269,6 +272,16 @@ static NSData* kTerminator;
 }
 
 - (void)didCloseWithCode: (WebSocketCloseCode)code reason: (NSString*)reason {
+    NSError* error;
+    if (code != kWebSocketCloseNormal) {
+        error = [NSError errorWithDomain: WebSocketErrorDomain
+                                    code: code
+                                userInfo: @{NSLocalizedFailureReasonErrorKey: reason}];
+    }
+    [self didCloseWithError: error];
+}
+
+- (void)didCloseWithError: (NSError*)error {
 	HTTPLogTrace();
 
 	// Override me to perform any cleanup when the socket is closed
@@ -278,8 +291,8 @@ static NSData* kTerminator;
 
 	// Notify delegate
     id<WebSocketDelegate> delegate = _delegate;
-	if ([delegate respondsToSelector:@selector(webSocket:didCloseWithCode:reason:)]) {
-		[delegate webSocket:self didCloseWithCode: code reason: reason];
+	if ([delegate respondsToSelector:@selector(webSocket:didCloseWithError:)]) {
+        [delegate webSocket:self didCloseWithError: error];
 	}
 }
 
@@ -561,8 +574,32 @@ static NSData* kTerminator;
 
 - (void)socketDidDisconnect:(GCDAsyncSocket *)sock withError:(NSError *)error {
 	HTTPLogTraceWith("error= %@", error.localizedDescription);
-	[self didCloseWithCode: kWebSocketCloseAbnormal
-                    reason: error.localizedDescription];
+    if ([error.domain isEqualToString: @"kCFStreamErrorDomainSSL"]) {
+        // This is CGDAsyncSocket returning a SecureTransport error code. Map to NSURLError:
+        NSInteger urlCode;
+        switch (error.code) {
+            case errSSLXCertChainInvalid:
+            case errSSLUnknownRootCert:
+                urlCode = NSURLErrorServerCertificateUntrusted;
+                break;
+            case errSSLNoRootCert:
+                urlCode = NSURLErrorServerCertificateHasUnknownRoot;
+                break;
+            case errSSLCertExpired:
+                urlCode = NSURLErrorServerCertificateHasBadDate;
+                break;
+            case errSSLCertNotYetValid:
+                urlCode = NSURLErrorServerCertificateNotYetValid;
+                break;
+            default:
+                urlCode = NSURLErrorSecureConnectionFailed;
+                break;
+        }
+        error = [NSError errorWithDomain: NSURLErrorDomain
+                                    code: urlCode
+                                userInfo: @{NSUnderlyingErrorKey: error}];
+    }
+    [self didCloseWithError: error];
 }
 
 @end

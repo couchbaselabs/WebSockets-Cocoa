@@ -41,6 +41,8 @@ enum WebSocketCloseCode : UInt16 {
 };
 typedef enum WebSocketCloseCode WebSocketCloseCode;
 
+extern NSString* const WebSocketErrorDomain;
+
 
 /** Abstract superclass WebSocket implementation.
     (If you want to connect to a server, look at WebSocketClient.)
@@ -94,6 +96,9 @@ typedef enum WebSocketCloseCode WebSocketCloseCode;
     This queue is created when the WebSocket is created. Don't use it for anything else. */
 @property (nonatomic, readonly) dispatch_queue_t websocketQueue;
 
+/** Calls -didCloseWithError:. */
+- (void) didCloseWithCode: (WebSocketCloseCode)code reason: (NSString*)reason;
+
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma mark - OVERRIDEABLE METHODS
@@ -106,7 +111,7 @@ typedef enum WebSocketCloseCode WebSocketCloseCode;
 - (void) didReceiveMessage:(NSString *)msg;
 - (void) didReceiveBinaryMessage:(NSData *)msg;
 - (void) isHungry;
-- (void) didCloseWithCode: (WebSocketCloseCode)code reason: (NSString*)reason;
+- (void) didCloseWithError: (NSError*)error;
 
 
 @end
@@ -142,9 +147,10 @@ typedef enum WebSocketCloseCode WebSocketCloseCode;
 /** Called when the WebSocket has finished sending all queued messages and is ready for more. */
 - (void) webSocketIsHungry:(WebSocket *)ws;
 
-/** Called after the WebSocket closes, either intentionally or due to an error. */
+/** Called after the WebSocket closes, either intentionally or due to an error.
+    If the condition is an abnormal WebSocketCloseCode, it will be the `code` property of the
+    NSError, and the `domain` will be WebSocketErrorDomain. */
 - (void) webSocket:(WebSocket *)ws
-         didCloseWithCode: (WebSocketCloseCode)code
-                   reason: (NSString*)reason;
+         didCloseWithError: (NSError*)error;
 
 @end
