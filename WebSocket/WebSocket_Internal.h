@@ -53,6 +53,7 @@ enum {
 	dispatch_queue_t _websocketQueue;
 	GCDAsyncSocket *_asyncSocket;
 
+    NSDictionary* _tlsSettings;
     WebSocketState _state;
 //	BOOL _isStarted;
 //	BOOL _isOpen;

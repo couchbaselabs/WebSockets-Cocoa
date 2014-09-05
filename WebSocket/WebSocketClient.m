@@ -86,8 +86,14 @@
         return NO;
     }
 
-    if ([url.scheme caseInsensitiveCompare: @"https"] == 0)
-        [_httpSocket startTLS: @{(id)kCFStreamSSLPeerName: url.host}];
+    if (_tlsSettings || [url.scheme caseInsensitiveCompare: @"https"] == 0) {
+        NSMutableDictionary* settings = [_tlsSettings mutableCopy];
+        if (!settings)
+            settings = [NSMutableDictionary dictionary];
+        if (!settings[(id)kCFStreamSSLPeerName])
+            settings[(id)kCFStreamSSLPeerName] = url.host;
+        [_httpSocket startTLS: settings];
+    }
 
     // Configure the nonce/key for the request:
     uint8_t nonceBytes[16];
@@ -174,6 +180,26 @@
     _asyncSocket = _httpSocket;
     _httpSocket = nil;
     [self start];
+}
+
+
+- (void)socketDidSecure:(GCDAsyncSocket *)sock {
+    id<WebSocketDelegate> delegate = _delegate;
+    if (![delegate respondsToSelector: @selector(webSocket:didSecureWithTrust:atURL:)])
+        return;
+    
+    __block SecTrustRef sslTrust = NULL;
+    [sock performBlock:^{
+#if TARGET_OS_IPHONE
+        sslTrust = (SecTrustRef) CFReadStreamCopyProperty(sock.readStream,
+                                                          kCFStreamPropertySSLPeerTrust);
+#else
+        SSLCopyPeerTrust(sock.sslContext, &sslTrust);
+#endif
+    }];
+
+    [delegate webSocket: self didSecureWithTrust: sslTrust atURL: _logic.URL];
+    CFRelease(sslTrust);
 }
 
 

@@ -93,7 +93,6 @@ NSString* const WebSocketErrorDomain = @"WebSocket";
 
 @implementation WebSocket
 {
-    NSDictionary* _tlsSettings;
 	BOOL _isRFC6455;
     NSTimeInterval _timeout;
 	BOOL _nextFrameMasked;
@@ -287,7 +286,7 @@ static NSData* kTerminator;
 	// Override me to perform any cleanup when the socket is closed
 	// This method is invoked on the websocketQueue.
 	//
-	// Don't forget to invoke [super didClose] at the end of your method.
+	// Don't forget to invoke [super didCloseWithError:] at the end of your method.
 
 	// Notify delegate
     id<WebSocketDelegate> delegate = _delegate;
