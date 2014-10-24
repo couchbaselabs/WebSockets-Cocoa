@@ -87,6 +87,9 @@ extern NSString* const WebSocketErrorDomain;
 /** Sends a binary message over the WebSocket. */
 - (void) sendBinaryMessage:(NSData*)msg;
 
+/** If set to YES, no incoming messages will be read from the socket or sent to the delegate.
+    Messages will resume when it's set back to NO. */
+@property BOOL readPaused;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma mark - UNDER THE HOOD
@@ -140,12 +143,16 @@ extern NSString* const WebSocketErrorDomain;
 /** Called when a WebSocket has opened its connection and is ready to send and receive messages. */
 - (void) webSocketDidOpen:(WebSocket *)ws;
 
-/** Called when a WebSocket receives a textual message from its peer. */
-- (void) webSocket:(WebSocket *)ws
+/** Called when a WebSocket receives a textual message from its peer.
+    If it returns NO, the WebSocket's read queue will be paused until the client sets the
+    readPaused property back to NO. */
+- (BOOL) webSocket:(WebSocket *)ws
          didReceiveMessage:(NSString *)msg;
 
-/** Called when a WebSocket receives a binary message from its peer. */
-- (void) webSocket:(WebSocket *)ws
+/** Called when a WebSocket receives a binary message from its peer.
+    If it returns NO, the WebSocket's read queue will be paused until the client sets the
+    readPaused property back to NO. */
+- (BOOL) webSocket:(WebSocket *)ws
          didReceiveBinaryMessage:(NSData *)msg;
 
 /** Called when the WebSocket has finished sending all queued messages and is ready for more. */

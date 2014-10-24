@@ -99,6 +99,8 @@ NSString* const WebSocketErrorDomain = @"WebSocket";
 	NSData *_maskingKey;
 	NSUInteger _nextOpCode;
     NSUInteger _writeQueueSize;
+    BOOL _readyToReadMessage;       // YES when message read and ready to start reading the next
+    BOOL _readPaused;               // While YES, stop reading messages from the socket
 }
 
 
@@ -260,9 +262,8 @@ static NSData* kTerminator;
     self.state = kWebSocketOpen;
 	
 	// Start reading for messages
-	[_asyncSocket readDataToLength: 1
-                       withTimeout: _timeout
-                               tag: (_isRFC6455 ? TAG_PAYLOAD_PREFIX : TAG_PREFIX)];
+    _readyToReadMessage = YES;
+    [self startReadingNextMessage];
 	// Notify delegate
     id<WebSocketDelegate> delegate = _delegate;
 	if ([delegate respondsToSelector:@selector(webSocketDidOpen:)]) {
@@ -430,7 +431,8 @@ static NSData* kTerminator;
 	// Notify delegate
     id<WebSocketDelegate> delegate = _delegate;
 	if ([delegate respondsToSelector:@selector(webSocket:didReceiveMessage:)]) {
-		[delegate webSocket:self didReceiveMessage:msg];
+		if (![delegate webSocket:self didReceiveMessage:msg])
+            [self _setReadPaused: YES];
 	}
 }
 
@@ -445,8 +447,37 @@ static NSData* kTerminator;
 	// Notify delegate
     id<WebSocketDelegate> delegate = _delegate;
 	if ([delegate respondsToSelector:@selector(webSocket:didReceiveBinaryMessage:)]) {
-		[delegate webSocket:self didReceiveBinaryMessage:msg];
+		if (![delegate webSocket:self didReceiveBinaryMessage:msg])
+            [self _setReadPaused: YES];
 	}
+}
+
+- (void) startReadingNextMessage {
+    if (_readyToReadMessage && !_readPaused && _state == kWebSocketOpen) {
+        _readyToReadMessage = NO;
+        [_asyncSocket readDataToLength:1 withTimeout:_timeout
+                                   tag:(_isRFC6455 ? TAG_PAYLOAD_PREFIX : TAG_PREFIX)];
+    }
+}
+
+- (BOOL) readPaused {
+    __block BOOL result;
+    dispatch_sync(_websocketQueue, ^{
+        result = _readPaused;
+    });
+    return result;
+}
+
+- (void) setReadPaused: (BOOL)paused {
+    dispatch_async(_websocketQueue, ^{
+        [self _setReadPaused: paused];
+    });
+}
+
+- (void) _setReadPaused: (BOOL)paused {
+    _readPaused = paused;
+    if (!paused)
+        [self startReadingNextMessage];
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -544,21 +575,20 @@ static NSData* kTerminator;
             maskBytes(masked, 0, msgLength, _maskingKey.bytes);
 			data = masked;
 		}
+        _readyToReadMessage = YES;
         if ([self didReceiveFrame: data type: _nextOpCode]) {
             // Read next frame
-            [_asyncSocket readDataToLength:1 withTimeout:_timeout tag:TAG_PAYLOAD_PREFIX];
+            [self startReadingNextMessage];
         }
 	} else if (tag == TAG_MSG_MASKING_KEY) {
 		_maskingKey = data.copy;
 	} else {
 		NSUInteger msgLength = [data length] - 1; // Excluding ending 0xFF frame
-		
 		NSString *msg = [[NSString alloc] initWithBytes:[data bytes] length:msgLength encoding:NSUTF8StringEncoding];
-		
+        _readyToReadMessage = YES;
 		[self didReceiveMessage:msg];
-
-		// Read next message
-		[_asyncSocket readDataToLength:1 withTimeout:_timeout tag:TAG_PREFIX];
+        // Read next message
+        [self startReadingNextMessage];
 	}
 }
 
