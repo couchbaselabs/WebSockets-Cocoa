@@ -51,6 +51,20 @@
 }
 
 
+- (UInt16) port {
+    NSNumber* portObj = self.URL.port;
+    if (portObj)
+        return (UInt16)portObj.intValue;
+    else
+        return self.useTLS ? 443 : 80;
+}
+
+- (BOOL) useTLS {
+    NSString* scheme = self.URL.scheme.lowercaseString;
+    return [scheme isEqualToString: @"https"] || [scheme isEqualToString: @"wss"];
+}
+
+
 - (void) setValue: (NSString*)value forHTTPHeaderField:(NSString*)header {
     [_urlRequest setValue: value forHTTPHeaderField: header];
 }

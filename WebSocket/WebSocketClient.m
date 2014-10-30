@@ -80,13 +80,13 @@
                                              delegateQueue: _websocketQueue];
     [_httpSocket setDelegate:self delegateQueue:_websocketQueue];
     if (![_httpSocket connectToHost: url.host
-                             onPort: (UInt16)(url.port ?url.port.intValue : 80)
+                             onPort: _logic.port
                         withTimeout: self.timeout
                               error: outError]) {
         return NO;
     }
 
-    if (_tlsSettings || [url.scheme caseInsensitiveCompare: @"https"] == 0) {
+    if (_tlsSettings || _logic.useTLS) {
         NSMutableDictionary* settings = [_tlsSettings mutableCopy];
         if (!settings)
             settings = [NSMutableDictionary dictionary];

@@ -39,6 +39,12 @@
 /** The URL. This will change after receiving a redirect response. */
 @property (readonly) NSURL* URL;
 
+/** The TCP port number, based on the URL. */
+@property (readonly) UInt16 port;
+
+/** Yes if TLS/SSL should be used (based on the URL). */
+@property (readonly) BOOL useTLS;
+
 /** The auth credential being used. */
 @property (readonly) NSURLCredential* credential;
 
