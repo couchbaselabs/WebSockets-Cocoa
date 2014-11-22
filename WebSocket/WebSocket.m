@@ -484,6 +484,23 @@ static NSData* kTerminator;
 #pragma mark AsyncSocket Delegate
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
+
+- (void)socket:(GCDAsyncSocket *)sock
+        didReceiveTrust:(SecTrustRef)trust
+        completionHandler:(void (^)(BOOL shouldTrustPeer))completionHandler
+{
+    // This only gets called if the SSL settings disable regular cert validation.
+    SecTrustEvaluateAsync(trust, dispatch_get_main_queue(),
+                          ^(SecTrustRef trustRef, SecTrustResultType result)
+    {
+        // Deny the connection if the client cert is, like, totally bogus:
+        BOOL ok = result != kSecTrustResultProceed
+               && result != kSecTrustResultUnspecified
+               && result != kSecTrustResultRecoverableTrustFailure;  // this is only semi-bogus
+        completionHandler(ok);
+    });
+}
+
 // 0                   1                   2                   3
 // 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 // +-+-+-+-+-------+-+-------------+-------------------------------+
