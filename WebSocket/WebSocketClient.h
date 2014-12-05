@@ -29,4 +29,7 @@
 /** Authentication credential. */
 @property NSURLCredential* credential;
 
+/** Determines whether connections should be made over a cellular network. The default value is YES. */
+@property (nonatomic) BOOL allowsCellularAccess;
+
 @end
