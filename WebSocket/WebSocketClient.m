@@ -31,7 +31,7 @@
 }
 
 
-@synthesize credential=_credential;
+@synthesize credential=_credential, allowsCellularAccess=_allowsCellularAccess;
 
 
 - (instancetype) initWithURLRequest:(NSURLRequest *)urlRequest {
@@ -40,6 +40,7 @@
         _isClient = YES;
         _logic = [[WebSocketHTTPLogic alloc] initWithURLRequest: urlRequest];
         _logic.handleRedirects = YES;
+        _allowsCellularAccess = YES;
         self.timeout = urlRequest.timeoutInterval;
     }
     return self;
@@ -180,6 +181,22 @@
     _asyncSocket = _httpSocket;
     _httpSocket = nil;
     [self start];
+}
+
+
+- (void)socket:(GCDAsyncSocket *)sock didConnectToHost:(NSString *)host port:(uint16_t)port {
+#if TARGET_OS_IPHONE
+    CFBooleanRef noCellular = self.allowsCellularAccess ? kCFBooleanFalse : kCFBooleanTrue;
+    [sock performBlock:^{
+        if (sock.readStream) {
+            CFReadStreamSetProperty (sock.readStream, kCFStreamPropertyNoCellular, noCellular);
+        }
+
+        if (sock.writeStream) {
+            CFWriteStreamSetProperty(sock.writeStream, kCFStreamPropertyNoCellular, noCellular);
+        }
+    }];
+#endif
 }
 
 
