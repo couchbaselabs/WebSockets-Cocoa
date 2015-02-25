@@ -93,12 +93,14 @@
                                          (__bridge CFStringRef)headers[header]);
 
     // Add cookie headers from the NSHTTPCookieStorage:
-    NSArray* cookies = [[NSHTTPCookieStorage sharedHTTPCookieStorage] cookiesForURL: url];
-    NSDictionary* cookieHeaders = [NSHTTPCookie requestHeaderFieldsWithCookies: cookies];
-    for (NSString* headerName in cookieHeaders) {
-        CFHTTPMessageSetHeaderFieldValue(httpMsg,
-                                         (__bridge CFStringRef)headerName,
-                                         (__bridge CFStringRef)cookieHeaders[headerName]);
+    if (_urlRequest.HTTPShouldHandleCookies) {
+        NSArray* cookies = [[NSHTTPCookieStorage sharedHTTPCookieStorage] cookiesForURL: url];
+        NSDictionary* cookieHeaders = [NSHTTPCookie requestHeaderFieldsWithCookies: cookies];
+        for (NSString* headerName in cookieHeaders) {
+            CFHTTPMessageSetHeaderFieldValue(httpMsg,
+                                             (__bridge CFStringRef)headerName,
+                                             (__bridge CFStringRef)cookieHeaders[headerName]);
+        }
     }
 
     // If this is a retry, set auth headers from the credential we got:
