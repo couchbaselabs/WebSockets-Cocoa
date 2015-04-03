@@ -44,7 +44,7 @@ enum {
 NSError *BLIPMakeError( int errorCode, NSString *message, ... ) __attribute__ ((format (__NSString__, 2, 3)));
 
 
-/** Abstract superclass for <a href=".#blipdesc">BLIP</a> requests and responses. */
+/** Abstract superclass for BLIP requests and responses. */
 @interface BLIPMessage : NSObject
 
 /** The BLIPWebSocket associated with this message. */
@@ -94,6 +94,11 @@ NSError *BLIPMakeError( int errorCode, NSString *message, ... ) __attribute__ ((
 /** The message body as an NSString.
     The UTF-8 character encoding is used to convert. */
 @property (copy) NSString *bodyString;
+
+/** The message body as a JSON-serializable object.
+    The setter will raise an exception if the value can't be serialized;
+    the getter just warns and returns nil. */
+@property (copy) id bodyJSON;
 
 /** An arbitrary object that you can associate with this message for your own purposes.
     The message retains it, but doesn't do anything else with it. */

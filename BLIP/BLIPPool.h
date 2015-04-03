@@ -24,7 +24,7 @@
 /** Returns an already-open BLIPWebSocket to the given URL, or nil if there is none. */
 - (BLIPWebSocket*) existingSocketToURL: (NSURL*)url error: (NSError**)outError;
 
-/** Closes all open sockets with the default status code. */
+/** Closes all open sockets, with the default status code. */
 - (void) close;
 
 /** Closes all open sockets. */

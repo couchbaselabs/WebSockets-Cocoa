@@ -15,7 +15,6 @@
 //  and limitations under the License.
 
 #import "BLIPDispatcher.h"
-#import "Target.h"
 #import "BLIPRequest.h"
 #import "BLIPProperties.h"
 #import "Test.h"

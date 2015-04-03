@@ -20,7 +20,6 @@
 #import "Logging.h"
 #import "Test.h"
 #import "ExceptionUtils.h"
-#import "Target.h"
 #import "MYData.h"
 
 // From Google Toolbox For Mac <http://code.google.com/p/google-toolbox-for-mac/>
@@ -42,6 +41,9 @@ NSError *BLIPMakeError( int errorCode, NSString *message, ... )
 
 
 @implementation BLIPMessage
+
+
+@synthesize dataDelegate=_dataDelegate;
 
 
 - (id) _initWithConnection: (id<BLIPMessageSender>)connection
@@ -184,6 +186,30 @@ NSError *BLIPMakeError( int errorCode, NSString *message, ... )
 }
 
 
+- (id) bodyJSON {
+    NSData* body = self.body;
+    if (body.length == 0)
+        return nil;
+    NSError* error;
+    id jsonObj = [NSJSONSerialization JSONObjectWithData: body
+                                                 options: NSJSONReadingAllowFragments
+                                                   error: &error];
+    if (!jsonObj)
+        Warn(@"Couldn't parse %@ body as JSON: %@", self, error.localizedFailureReason);
+    return jsonObj;
+}
+
+
+- (void) setBodyJSON: (id)jsonObj {
+    NSError* error;
+    NSData* body = [NSJSONSerialization dataWithJSONObject: jsonObj options: 0 error: &error];
+    Assert(body, @"Couldn't encode as JSON: %@", error.localizedFailureReason);
+    self.body = body;
+    self.contentType = @"application/json";
+    self.compressed = (body.length > 100);
+}
+
+
 - (BLIPProperties*) properties
 {
     return _properties;
@@ -235,7 +261,7 @@ NSError *BLIPMakeError( int errorCode, NSString *message, ... )
     _properties = [oldProps copy];
     
     _encodedBody = [_properties.encodedData mutableCopy];
-    Assert(_encodedBody.length>=2);
+    Assert(_encodedBody.length > 0);
 
     NSData *body = _body ?: _mutableBody;
     NSUInteger length = body.length;
@@ -267,7 +293,7 @@ NSError *BLIPMakeError( int errorCode, NSString *message, ... )
         LogTo(BLIP,@"Now sending %@",self);
     ssize_t lengthToWrite = _encodedBody.length - _bytesWritten;
     if( lengthToWrite <= 0 && _bytesWritten > 0 )
-        return NO; // done
+        return nil; // done
     UInt16 flags = _flags;
     size_t headerSize = MYLengthOfVarUInt(_number) + MYLengthOfVarUInt(flags | kBLIP_MoreComing);
     maxSize -= headerSize;
@@ -296,20 +322,16 @@ NSError *BLIPMakeError( int errorCode, NSString *message, ... )
 {
     Assert(!_isMine);
     Assert(_flags & kBLIP_MoreComing);
-    
-    BLIPMessageType frameType = (flags & kBLIP_TypeMask), curType = (_flags & kBLIP_TypeMask);
-    if( frameType != curType ) {
-        Assert(curType==kBLIP_RPY && frameType==kBLIP_ERR && _mutableBody.length==0,
-               @"Incoming frame's type %i doesn't match %@",frameType,self);
-        _flags = (_flags & ~kBLIP_TypeMask) | frameType;
-    }
+
+    if (!self.isRequest)
+        _flags = flags | kBLIP_MoreComing;
 
     if( _encodedBody )
         [_encodedBody appendData: body];
     else
         _encodedBody = [body mutableCopy];
-    LogTo(BLIPVerbose,@"%@ rcvd bytes %lu-%lu",
-          self, (unsigned long)_encodedBody.length-body.length, (unsigned long)_encodedBody.length);
+    LogTo(BLIPVerbose,@"%@ rcvd bytes %lu-%lu, flags=%x",
+          self, (unsigned long)_encodedBody.length-body.length, (unsigned long)_encodedBody.length, flags);
     
     if( ! _properties ) {
         // Try to extract the properties:
@@ -336,8 +358,10 @@ NSError *BLIPMakeError( int errorCode, NSString *message, ... )
         NSUInteger encodedLength = _encodedBody.length;
         if( self.compressed && encodedLength>0 ) {
             _body = [[NSData gtm_dataByInflatingData: _encodedBody] copy];
-            if( ! _body )
+            if( ! _body ) {
+                Warn(@"Failed to decompress %@", self);
                 return NO;
+            }
             LogTo(BLIPVerbose,@"Uncompressed %@ from %lu bytes (%.1fx)", self, (unsigned long)encodedLength,
                   _body.length/(double)encodedLength);
         } else if (!useDelegate) {

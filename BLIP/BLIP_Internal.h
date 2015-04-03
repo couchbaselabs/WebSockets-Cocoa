@@ -14,30 +14,31 @@
 /* Private declarations and APIs for BLIP implementation. Not for use by clients! */
 
 
-/* BLIP message types; encoded in each frame's header. */
-typedef enum {
-    kBLIP_MSG,                      // initiating message
-    kBLIP_RPY,                      // response to a MSG
-    kBLIP_ERR                       // error response to a MSG
-} BLIPMessageType;
-
 /* Flag bits in a BLIP frame header */
-enum {
+typedef NS_OPTIONS(UInt8, BLIPMessageFlags) {
+    kBLIP_MSG       = 0x00,       // initiating message
+    kBLIP_RPY       = 0x01,       // response to a MSG
+    kBLIP_ERR       = 0x02,       // error response to a MSG
+
     kBLIP_TypeMask  = 0x03,       // bits reserved for storing message type
     kBLIP_Compressed= 0x04,       // data is gzipped
     kBLIP_Urgent    = 0x08,       // please send sooner/faster
     kBLIP_NoReply   = 0x10,       // no RPY needed
     kBLIP_MoreComing= 0x20,       // More frames coming (Applies only to individual frame)
     kBLIP_Meta      = 0x40,       // Special message type, handled internally (hello, bye, ...)
+
+    kBLIP_MaxFlag   = 0xFF
 };
-typedef UInt8 BLIPMessageFlags;
+
+/* BLIP message types; encoded in each frame's header. */
+typedef BLIPMessageFlags BLIPMessageType;
 
 
 @interface BLIPMessage ()
 {
     @protected
     id<BLIPMessageSender> _connection;
-    UInt16 _flags;
+    BLIPMessageFlags _flags;
     UInt32 _number;
     BLIPProperties *_properties;
     NSData *_body;

@@ -17,7 +17,6 @@
 #import "BLIPRequest.h"
 #import "BLIP_Internal.h"
 
-#import "Target.h"
 #import "Logging.h"
 #import "Test.h"
 #import "ExceptionUtils.h"
@@ -134,6 +133,12 @@
 {
     [self respondWithData: [string dataUsingEncoding: NSUTF8StringEncoding]
               contentType: @"text/plain; charset=UTF-8"];
+}
+
+- (void) respondWithJSON: (id)jsonObject {
+    BLIPResponse *response = self.response;
+    response.bodyJSON = jsonObject;
+    [response send];
 }
 
 - (void) respondWithError: (NSError*)error

@@ -111,33 +111,37 @@
 
 
 - (void)blipWebSocketDidOpen:(BLIPWebSocket*)webSocket {
-    if ([_delegate respondsToSelector: @selector(blipWebSocketDidOpen:)])
-        [_delegate blipWebSocketDidOpen: webSocket];
+    id<BLIPWebSocketDelegate> delegate = _delegate;
+    if ([delegate respondsToSelector: @selector(blipWebSocketDidOpen:)])
+        [delegate blipWebSocketDidOpen: webSocket];
 }
 
 - (void)blipWebSocket: (BLIPWebSocket*)webSocket didFailWithError:(NSError *)error {
     [self forgetSocket: webSocket];
-    if ([_delegate respondsToSelector: @selector(blipWebSocket:didFailWithError:)])
-        [_delegate blipWebSocket: webSocket didFailWithError: error];
+    id<BLIPWebSocketDelegate> delegate = _delegate;
+    if ([delegate respondsToSelector: @selector(blipWebSocket:didFailWithError:)])
+        [delegate blipWebSocket: webSocket didFailWithError: error];
 }
 
 - (void)blipWebSocket: (BLIPWebSocket*)webSocket
-     didCloseWithCode: (WebSocketCloseCode)code
-               reason: (NSString*)reason
+    didCloseWithError: (NSError*)error
 {
     [self forgetSocket: webSocket];
-    if ([_delegate respondsToSelector: @selector(blipWebSocket:didCloseWithCode:reason:)])
-        [_delegate blipWebSocket: webSocket didCloseWithCode: code reason: reason];
+    id<BLIPWebSocketDelegate> delegate = _delegate;
+    if ([delegate respondsToSelector: @selector(blipWebSocket:didCloseWithError:)])
+        [delegate blipWebSocket: webSocket didCloseWithError: error];
 }
 
 - (BOOL) blipWebSocket: (BLIPWebSocket*)webSocket receivedRequest: (BLIPRequest*)request {
-    return [_delegate respondsToSelector: @selector(blipWebSocket:receivedRequest:)]
-        && [_delegate blipWebSocket: webSocket receivedRequest: request];
+    id<BLIPWebSocketDelegate> delegate = _delegate;
+    return [delegate respondsToSelector: @selector(blipWebSocket:receivedRequest:)]
+        && [delegate blipWebSocket: webSocket receivedRequest: request];
 }
 
 - (void) blipWebSocket: (BLIPWebSocket*)webSocket receivedResponse: (BLIPResponse*)response {
-    if ([_delegate respondsToSelector: @selector(blipWebSocket:receivedResponse:)])
-        [_delegate blipWebSocket: webSocket receivedResponse: response];
+    id<BLIPWebSocketDelegate> delegate = _delegate;
+    if ([delegate respondsToSelector: @selector(blipWebSocket:receivedResponse:)])
+        [delegate blipWebSocket: webSocket receivedResponse: response];
 }
 
 

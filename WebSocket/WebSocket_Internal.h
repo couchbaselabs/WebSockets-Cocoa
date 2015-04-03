@@ -11,7 +11,7 @@
 
 
 #define TIMEOUT_NONE          -1
-#define TIMEOUT_DEFAULT       60
+#define TIMEOUT_DEFAULT       TIMEOUT_NONE //60
 #define TIMEOUT_REQUEST_BODY  10
 
 // WebSocket frame types:

@@ -67,6 +67,9 @@
 /** Shortcut to respond to this request with the given string (which will be encoded in UTF-8). */
 - (void) respondWithString: (NSString*)string;
 
+/** Shortcut to respond to this request with JSON. */
+- (void) respondWithJSON: (id)jsonObject;
+
 /** Shortcut to respond to this request with an error. */
 - (void) respondWithError: (NSError*)error;
 

@@ -51,6 +51,8 @@
     BLIPDispatcher* _dispatcher;
 }
 
+@synthesize dispatchPartialMessages=_dispatchPartialMessages;
+
 
 // Public API; Designated initializer
 - (instancetype) initWithWebSocket: (WebSocket*)webSocket {
@@ -62,6 +64,8 @@
         _webSocket = webSocket;
         _websocketQueue = webSocket.websocketQueue;
         _webSocket.delegate = self;
+        if (webSocket.state == kWebSocketOpen)
+            _webSocketIsOpen = YES;
         _delegateQueue = dispatch_get_main_queue();
         _pendingRequests = [[NSMutableDictionary alloc] init];
         _pendingResponses = [[NSMutableDictionary alloc] init];
@@ -92,7 +96,7 @@
 
 - (void) _callDelegate: (SEL)selector block: (void(^)(id<BLIPWebSocketDelegate>))block {
     id<BLIPWebSocketDelegate> delegate = _delegate;
-    if (_delegate && [_delegate respondsToSelector: selector]) {
+    if (delegate && [delegate respondsToSelector: selector]) {
         dispatch_async(_delegateQueue, ^{
             block(delegate);
         });
@@ -168,13 +172,12 @@
 
 // WebSocket delegate method
 - (void)webSocket:(WebSocket *)webSocket
- didCloseWithCode:(WebSocketCloseCode)code
-           reason:(NSString *)reason
+        didCloseWithError: (NSError*)error
 {
-    LogTo(BLIP, @"%@ closed with code %d", self, (int)code);
-    [self _callDelegate: @selector(blipWebSocket:didCloseWithCode:reason:)
+    LogTo(BLIP, @"%@ closed with error %@", self, error);
+    [self _callDelegate: @selector(blipWebSocket:didCloseWithError:)
                   block: ^(id<BLIPWebSocketDelegate> delegate) {
-            [delegate blipWebSocket: self didCloseWithCode: code reason: reason];
+                      [delegate blipWebSocket: self didCloseWithError: error];
     }];
 }
 
@@ -296,19 +299,20 @@
         // Ask the message to generate its next frame. Do this on the delegate queue:
         __block BOOL moreComing;
         __block NSData* frame;
-        dispatch_sync(_delegateQueue, ^{
-            frame = [msg nextWebSocketFrameWithMaxSize: frameSize moreComing: &moreComing];
+        dispatch_async(_delegateQueue, ^{
+            frame = [msg nextWebSocketFrameWithMaxSize: (UInt16)frameSize moreComing: &moreComing];
+            dispatch_async(_websocketQueue, ^{
+                LogTo(BLIPVerbose,@"%@: Sending frame of %@",self, msg);
+
+                // SHAZAM! Send the frame to the WebSocket:
+                [_webSocket sendBinaryMessage: frame];
+
+                if (moreComing) {
+                    // add the message back so it can send its next frame later:
+                    [self _queueMessage: msg isNew: NO];
+                }
+            });
         });
-        LogTo(BLIPVerbose,@"%@: Sending frame of %@",self, msg);
-        Log(@"Frame = %@", frame);//TEMP
-
-        // SHAZAM! Send the frame to the WebSocket:
-        [_webSocket sendBinaryMessage: frame];
-
-        if (moreComing) {
-            // add the message back so it can send its next frame later:
-            [self _queueMessage: msg isNew: NO];
-        }
     } else {
         LogTo(BLIPVerbose,@"%@: no more work for writer",self);
     }
@@ -324,7 +328,7 @@
 
 
 // WebSocket delegate method
-- (void)webSocket:(WebSocket *)webSocket didReceiveBinaryMessage:(NSData*)message {
+- (BOOL)webSocket:(WebSocket *)webSocket didReceiveBinaryMessage:(NSData*)message {
     const void* start = message.bytes;
     const void* end = start + message.length;
     UInt64 messageNum;
@@ -332,16 +336,17 @@
     if (pos) {
         UInt64 flags;
         pos = MYDecodeVarUInt(pos, end, &flags);
-        if (pos) {
+        if (pos && flags <= kBLIP_MaxFlag) {
             NSData* body = [NSData dataWithBytes: pos length: message.length - (pos-start)];
             [self receivedFrameWithNumber: (UInt32)messageNum
-                                    flags: flags
+                                    flags: (BLIPMessageFlags)flags
                                      body: body];
-            return;
+            return YES; // TODO: Return NO if too many messages are queued up
         }
     }
     [self _closeWithError: BLIPMakeError(kBLIPError_BadFrame,
                                          @"Bad varint encoding in frame flags")];
+    return YES;
 }
 
 
@@ -374,18 +379,14 @@
                 if( ! complete )
                     _pendingRequests[key] = request;
                 _numRequestsReceived++;
-            } else
+            } else {
                 return [self _closeWithError: BLIPMakeError(kBLIPError_BadFrame, 
                                                @"Received bad request frame #%u (next is #%u)",
                                                (unsigned int)requestNumber,
                                                (unsigned)_numRequestsReceived+1)];
-            
-            if( ! [request _receivedFrameWithFlags: flags body: body] )
-                return [self _closeWithError: BLIPMakeError(kBLIPError_BadFrame, 
-                                               @"Couldn't parse message frame")];
-            
-            if( complete && !self.dispatchPartialMessages )
-                [self _dispatchRequest: request];
+            }
+
+            [self _receiveFrameWithFlags: flags body: body complete: complete forMessage: request];
             break;
         }
             
@@ -396,13 +397,8 @@
                 if( complete ) {
                     [_pendingResponses removeObjectForKey: key];
                 }
-                
-                if( ! [response _receivedFrameWithFlags: flags body: body] ) {
-                    return [self _closeWithError: BLIPMakeError(kBLIPError_BadFrame, 
-                                                          @"Couldn't parse response frame")];
-                } else if( complete && !self.dispatchPartialMessages )
-                    [self _dispatchResponse: response];
-                
+                [self _receiveFrameWithFlags: flags body: body complete: complete forMessage: response];
+
             } else {
                 if( requestNumber <= _numRequestsSent )
                     LogTo(BLIP,@"??? %@ got unexpected response frame to my msg #%u",
@@ -423,9 +419,32 @@
 }
 
 
+- (void) _receiveFrameWithFlags: (BLIPMessageFlags)flags
+                           body: (NSData*)body
+                       complete: (BOOL)complete
+                     forMessage: (BLIPMessage*)message
+{
+    dispatch_async(_delegateQueue, ^{
+        BOOL ok = [message _receivedFrameWithFlags: flags body: body];
+        if (!ok) {
+            dispatch_async(_websocketQueue, ^{
+                [self _closeWithError: BLIPMakeError(kBLIPError_BadFrame,
+                                                     @"Couldn't parse message frame")];
+            });
+        } else if( complete && !self.dispatchPartialMessages ) {
+            if (message.isRequest)
+                [self _dispatchRequest: (BLIPRequest*)message];
+            else
+                [self _dispatchResponse: (BLIPResponse*)message];
+        }
+    });
+}
+
+
 #pragma mark - DISPATCHING:
 
 
+// called on delegate queue
 - (void) _messageReceivedProperties: (BLIPMessage*)message {
     if (self.dispatchPartialMessages) {
         if (message.isRequest)
@@ -465,35 +484,33 @@
 }
 
 
+// called on delegate queue
 - (void) _dispatchRequest: (BLIPRequest*)request {
     id<BLIPWebSocketDelegate> delegate = _delegate;
-    dispatch_async(_delegateQueue, ^{
-        // Do the dispatching on the delegate queue:
-        LogTo(BLIP,@"Dispatching %@",request.descriptionWithProperties);
-        @try{
-            BOOL handled;
-            if( request._flags & kBLIP_Meta )
-                handled =[self _dispatchMetaRequest: request];
-            else {
-                handled = [self.dispatcher dispatchMessage: request];
-                if (!handled && [delegate respondsToSelector: @selector(blipWebSocket:receivedRequest:)])
-                    handled = [delegate blipWebSocket: self receivedRequest: request];
-            }
-
-            if (request.complete) {
-                if (!handled) {
-                    LogTo(BLIP,@"No handler found for incoming %@",request);
-                    [request respondWithErrorCode: kBLIPError_NotFound message: @"No handler was found"];
-                } else if( ! request.noReply && ! request.repliedTo ) {
-                    LogTo(BLIP,@"Returning default empty response to %@",request);
-                    [request respondWithData: nil contentType: nil];
-                }
-            }
-        }@catch( NSException *x ) {
-            MYReportException(x,@"Dispatching BLIP request");
-            [request respondWithException: x];
+    LogTo(BLIP,@"Dispatching %@",request.descriptionWithProperties);
+    @try{
+        BOOL handled;
+        if( request._flags & kBLIP_Meta )
+            handled =[self _dispatchMetaRequest: request];
+        else {
+            handled = [self.dispatcher dispatchMessage: request];
+            if (!handled && [delegate respondsToSelector: @selector(blipWebSocket:receivedRequest:)])
+                handled = [delegate blipWebSocket: self receivedRequest: request];
         }
-    });
+
+        if (request.complete) {
+            if (!handled) {
+                LogTo(BLIP,@"No handler found for incoming %@",request);
+                [request respondWithErrorCode: kBLIPError_NotFound message: @"No handler was found"];
+            } else if( ! request.noReply && ! request.repliedTo ) {
+                LogTo(BLIP,@"Returning default empty response to %@",request);
+                [request respondWithData: nil contentType: nil];
+            }
+        }
+    }@catch( NSException *x ) {
+        MYReportException(x,@"Dispatching BLIP request");
+        [request respondWithException: x];
+    }
 }
 
 - (void) _dispatchResponse: (BLIPResponse*)response {

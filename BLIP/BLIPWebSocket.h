@@ -17,6 +17,8 @@
 - (instancetype) initWithURLRequest:(NSURLRequest *)request;
 - (instancetype) initWithURL:(NSURL *)url;
 
+- (instancetype) initWithWebSocket: (WebSocket*)webSocket;
+
 /** Attaches a delegate, and specifies what GCD queue it should be called on. */
 - (void) setDelegate: (id<BLIPWebSocketDelegate>)delegate
                queue: (dispatch_queue_t)delegateQueue;
@@ -30,6 +32,8 @@
 
 - (void)close;
 - (void)closeWithCode:(WebSocketCloseCode)code reason:(NSString *)reason;
+
+@property (nonatomic) BLIPDispatcher* dispatcher;
 
 /** If set to YES, an incoming message will be dispatched to the delegate and/or dispatcher before it's complete, as soon as its properties are available. The application should then set a dataDelegate on the message to receive its data a frame at a time. */
 @property BOOL dispatchPartialMessages;
@@ -67,8 +71,7 @@
 - (void)blipWebSocket: (BLIPWebSocket*)webSocket didFailWithError:(NSError *)error;
 
 - (void)blipWebSocket: (BLIPWebSocket*)webSocket
-     didCloseWithCode: (WebSocketCloseCode)code
-               reason: (NSString*)reason;
+    didCloseWithError: (NSError*)error;
 
 /** Called when a BLIPRequest is received from the peer, if there is no BLIPDispatcher
     rule to handle it.

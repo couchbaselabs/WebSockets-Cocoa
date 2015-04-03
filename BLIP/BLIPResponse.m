@@ -67,7 +67,7 @@
 
 - (NSError*) error
 {
-    if( ! (_flags & kBLIP_ERR) )
+    if( (_flags & kBLIP_TypeMask) != kBLIP_ERR )
         return nil;
     
     NSMutableDictionary *userInfo = [[self.properties allProperties] mutableCopy];
