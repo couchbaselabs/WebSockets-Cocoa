@@ -15,10 +15,7 @@
 - (BOOL) _sendResponse: (BLIPResponse*)response;
 @property (readonly) NSError* error;
 - (void) _messageReceivedProperties: (BLIPMessage*)message;
-- (void) _message: (BLIPMessage*)msg receivedMoreData: (NSData*)data;
 @end
-
-@protocol BLIPMessageDataDelegate;
 
 
 /** NSError domain and codes for BLIP */
@@ -50,9 +47,12 @@ NSError *BLIPMakeError( int errorCode, NSString *message, ... ) __attribute__ ((
 /** The BLIPWebSocket associated with this message. */
 @property (readonly,strong) id<BLIPMessageSender> connection;
 
-/** The dataDelegate property allows for streaming incoming message data. If a dataDelegate property is set, then as each frame of data arrives the -BLIPMessage:didReceiveData: method will be called. The .body property will _not_ be set.
-    (Exception: This currently doesn't work with compressed messages. The dataDelegate will not be called with such messages.) */
-@property (weak) id<BLIPMessageDataDelegate> dataDelegate;
+/** The onDataReceived callback allows for streaming incoming message data. If it's set, then as each frame of data arrives the -BLIPMessage:didReceiveData: method will be called. The .body property will _not_ be set.
+    (Note: If the message is compressed, onDataReceived won't be called while data arrives, just once at the end after decompression. This may be improved in the future.) */
+@property (strong) void (^onDataReceived)(NSData*);
+
+/** Called when the message has been completely sent over the socket. */
+@property (strong) void (^onSent)();
 
 /** This message's serial number in its connection.
     A BLIPRequest's number is initially zero, then assigned when it's sent.
@@ -134,15 +134,5 @@ NSError *BLIPMakeError( int errorCode, NSString *message, ... ) __attribute__ ((
 /** Similar to -description, but also shows the properties and their values. */
 @property (readonly) NSString* descriptionWithProperties;
 
-
-@end
-
-
-
-@protocol BLIPMessageDataDelegate <NSObject>
-
-/** Called when a new frame of data arrives for a BLIPMessage. The data will not be accumulated into the .body property, so if the delegate doesn't save it, it will be freed.
-    You can detect whether the message is complete by checking its .complete property. */
-- (void) blipMessage: (BLIPMessage*)msg didReceiveData: (NSData*)data;
 
 @end

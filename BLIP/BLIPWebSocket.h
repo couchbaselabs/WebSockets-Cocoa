@@ -23,6 +23,8 @@
 - (void) setDelegate: (id<BLIPWebSocketDelegate>)delegate
                queue: (dispatch_queue_t)delegateQueue;
 
+/** URL this socket is connected to, _if_ it's a client socket; if it's an incoming one received
+    by a BLIPWebSocketListener, this is nil. */
 @property (readonly) NSURL* URL;
 
 /** The underlying WebSocket. */

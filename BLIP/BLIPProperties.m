@@ -365,7 +365,7 @@ static void appendStr( NSMutableData *data, NSString *str ) {
 
 
 
-
+#if 0
 TestCase(BLIPProperties) {
     BLIPProperties *props;
     
@@ -411,8 +411,8 @@ TestCase(BLIPProperties) {
     NSDictionary *all = mprops.allProperties;
     for( NSString *prop in all )
         CAssertEqual([props valueOfProperty: prop],all[prop]);
-	
 }
+#endif
 
 
 /*

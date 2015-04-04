@@ -9,24 +9,34 @@
 #import "BLIPWebSocketListener.h"
 #import "WebSocketListener.h"
 #import "BLIPWebSocket.h"
+#import "Logging.h"
+
+
+@interface BLIPWebSocketListener () <WebSocketDelegate>
+@end
 
 
 @implementation BLIPWebSocketListener
 {
-    id<BLIPWebSocketDelegate> _delegate;
+    id<BLIPWebSocketDelegate> _blipDelegate;
     dispatch_queue_t _delegateQueue;
     NSMutableSet* _openSockets;
 }
 
-@synthesize dispatcher=_dispatcher;
-
-
-- (instancetype)initWithDelegate: (id<BLIPWebSocketDelegate>)delegate
-                           queue: (dispatch_queue_t)queue
+- (instancetype) initWithPath: (NSString*)path
+                     delegate: (id<BLIPWebSocketDelegate>)delegate
 {
-    self = [super init];
+    return [self initWithPath: path delegate: delegate queue: nil];
+}
+
+
+- (instancetype) initWithPath: (NSString*)path
+                     delegate: (id<BLIPWebSocketDelegate>)delegate
+                        queue: (dispatch_queue_t)queue;
+{
+    self = [super initWithPath: path delegate: self];
     if (self) {
-        _delegate = delegate;
+        _blipDelegate = delegate;
         _delegateQueue = queue ?: dispatch_get_main_queue();
         _openSockets = [NSMutableSet new];
     }
@@ -37,15 +47,15 @@
 - (void) webSocketDidOpen:(WebSocket *)ws {
     BLIPWebSocket* b = [[BLIPWebSocket alloc] initWithWebSocket: ws];
     [_openSockets addObject: b];    //FIX: How to remove it since I'm not the delegate when it closes??
-    [b setDelegate: _delegate queue: _delegateQueue];
-    if (_dispatcher)
-        b.dispatcher = _dispatcher;
+    LogTo(BLIP, @"Listener got connection: %@", b);
+    dispatch_async(_delegateQueue, ^{
+        [self blipWebSocketDidOpen: b];
+    });
+}
 
-    if (_delegate) {
-        dispatch_async(_delegateQueue, ^{
-            [_delegate blipWebSocketDidOpen: b];
-        });
-    }
+
+- (void)blipWebSocketDidOpen:(BLIPWebSocket*)b {
+    [b setDelegate: _blipDelegate queue: _delegateQueue];
 }
 
 

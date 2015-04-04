@@ -140,6 +140,7 @@
         @try{
             _onComplete();
         }catchAndReport(@"BLIPRequest onComplete block");
+        _onComplete = nil;
     }
 }
 

@@ -43,4 +43,7 @@
 
 @property WebSocketListener* listener;
 
+/** The approximate URL of the peer connection; will contain just an IP address and port. */
+@property (readonly) NSURL* URL;
+
 @end

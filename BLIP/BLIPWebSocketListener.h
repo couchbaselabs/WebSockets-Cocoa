@@ -6,14 +6,15 @@
 //  Copyright (c) 2015 Couchbase. All rights reserved.
 //
 
-#import "WebSocket.h"
+#import "WebSocketListener.h"
 #import "BLIPWebSocket.h"
 
-@interface BLIPWebSocketListener : NSObject <WebSocketDelegate>
+@interface BLIPWebSocketListener : WebSocketListener
 
-- (instancetype)initWithDelegate: (id<BLIPWebSocketDelegate>)delegate
-                           queue: (dispatch_queue_t)queue;
+- (instancetype) initWithPath: (NSString*)path
+                     delegate: (id<BLIPWebSocketDelegate>)delegate
+                        queue: (dispatch_queue_t)queue;
 
-@property BLIPDispatcher* dispatcher;
+- (void)blipWebSocketDidOpen:(BLIPWebSocket*)webSocket;
 
 @end

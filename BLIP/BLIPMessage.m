@@ -43,7 +43,7 @@ NSError *BLIPMakeError( int errorCode, NSString *message, ... )
 @implementation BLIPMessage
 
 
-@synthesize dataDelegate=_dataDelegate;
+@synthesize onDataReceived=_onDataReceived, onSent=_onSent;
 
 
 - (id) _initWithConnection: (id<BLIPMessageSender>)connection
@@ -66,15 +66,16 @@ NSError *BLIPMakeError( int errorCode, NSString *message, ... )
         } else {
             _encodedBody = body.mutableCopy;
         }
-        LogTo(BLIPVerbose,@"INIT %@",self);
+        LogTo(BLIPLifecycle,@"INIT %@",self);
     }
     return self;
 }
 
-- (void) dealloc
-{
-    LogTo(BLIPVerbose,@"DEALLOC %@",self);
+#if DEBUG
+- (void) dealloc {
+    LogTo(BLIPLifecycle,@"DEALLOC %@",self);
 }
+#endif
 
 
 - (NSString*) description
@@ -268,8 +269,8 @@ NSError *BLIPMakeError( int errorCode, NSString *message, ... )
     if( length > 0 ) {
         if( self.compressed ) {
             body = [NSData gtm_dataByGzippingData: body compressionLevel: 5];
-            LogTo(BLIPVerbose,@"Compressed %@ to %lu bytes (%.0f%%)", self,(unsigned long)body.length,
-                  body.length*100.0/length);
+//            LogTo(BLIPVerbose,@"Compressed %@ to %lu bytes (%.0f%%)", self,(unsigned long)body.length,
+//                  body.length*100.0/length);
         }
         [_encodedBody appendData: body];
     }
@@ -347,7 +348,7 @@ NSError *BLIPMakeError( int errorCode, NSString *message, ... )
         [_connection _messageReceivedProperties: self];
     }
 
-    BOOL useDelegate = (_dataDelegate && _properties && !self.compressed);
+    void (^onDataReceived)(NSData*) = (_properties && !self.compressed) ? _onDataReceived : nil;
     NSData* readData = _encodedBody;
 
     if( ! (flags & kBLIP_MoreComing) ) {
@@ -364,16 +365,19 @@ NSError *BLIPMakeError( int errorCode, NSString *message, ... )
             }
             LogTo(BLIPVerbose,@"Uncompressed %@ from %lu bytes (%.1fx)", self, (unsigned long)encodedLength,
                   _body.length/(double)encodedLength);
-        } else if (!useDelegate) {
+            if (_onDataReceived)
+                _onDataReceived(_body);
+        } else if (!onDataReceived) {
             _body = [_encodedBody copy];
         }
         _encodedBody = nil;
+        _onDataReceived = nil;
         self.propertiesAvailable = self.complete = YES;
     }
 
-    if (useDelegate && readData.length > 0) {
+    if (onDataReceived && readData.length > 0) {
         _encodedBody = nil;
-        [_connection _message: self receivedMoreData: readData];
+        onDataReceived(readData);
     }
     return YES;
 }

@@ -301,20 +301,22 @@
         __block NSData* frame;
         dispatch_async(_delegateQueue, ^{
             frame = [msg nextWebSocketFrameWithMaxSize: (UInt16)frameSize moreComing: &moreComing];
+            void (^onSent)() = moreComing ? nil : msg.onSent;
             dispatch_async(_websocketQueue, ^{
-                LogTo(BLIPVerbose,@"%@: Sending frame of %@",self, msg);
-
                 // SHAZAM! Send the frame to the WebSocket:
                 [_webSocket sendBinaryMessage: frame];
 
                 if (moreComing) {
                     // add the message back so it can send its next frame later:
                     [self _queueMessage: msg isNew: NO];
+                } else {
+                    if (onSent)
+                        dispatch_async(_delegateQueue, onSent);
                 }
             });
         });
     } else {
-        LogTo(BLIPVerbose,@"%@: no more work for writer",self);
+        //LogTo(BLIPVerbose,@"%@: no more work for writer",self);
     }
 }
 
@@ -452,13 +454,6 @@
         else
             [self _dispatchResponse: (BLIPResponse*)message];
     }
-}
-
-
-- (void) _message: (BLIPMessage*)msg receivedMoreData: (NSData*)data {
-    dispatch_async(_delegateQueue, ^{
-        [msg.dataDelegate blipMessage: msg didReceiveData: data];
-    });
 }
 
 

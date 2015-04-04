@@ -19,6 +19,7 @@
 #import "DDData.h"
 #import "CollectionUtils.h"
 #import "Logging.h"
+#import "MYURLUtils.h"
 
 
 @interface WebSocketListener () <GCDAsyncSocketDelegate>
@@ -38,7 +39,7 @@
 @synthesize path=_path;
 
 
-- (id)initWithPath: (NSString*)path delegate: (id<WebSocketDelegate>)delegate {
+- (instancetype) initWithPath: (NSString*)path delegate: (id<WebSocketDelegate>)delegate {
     self = [super init];
     if (self) {
         _path = path;
@@ -80,7 +81,7 @@
     WebSocketIncoming* ws = [[WebSocketIncoming alloc] initWithConnectedSocket: newSocket
                                                                       delegate: _delegate];
     ws.listener = self;
-    LogTo(WS, @"Opened incoming %@", ws);
+    LogTo(WS, @"Opened incoming %@ with delegate %@", ws, ws.delegate);
     [_connections addObject: ws];
 }
 
@@ -230,6 +231,10 @@ static BOOL checkHeader(CFHTTPMessageRef msg, NSString* header, NSString* expect
     }
 }
 
+
+- (NSURL*) URL {
+    return $url($sprintf(@"ws://%@:%d/", _asyncSocket.connectedHost, _asyncSocket.connectedPort));
+}
 
 
 @end
