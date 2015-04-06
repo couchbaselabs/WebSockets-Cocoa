@@ -350,6 +350,11 @@ NSError *BLIPMakeError( int errorCode, NSString *message, ... )
 
     void (^onDataReceived)(NSData*) = (_properties && !self.compressed) ? _onDataReceived : nil;
     NSData* readData = _encodedBody;
+    if (onDataReceived && readData.length > 0) {
+        LogTo(BLIPVerbose, @"%@ -> calling onDataReceived(%lu bytes)", self, readData.length);
+        _encodedBody = nil;
+        onDataReceived(readData);
+    }
 
     if( ! (flags & kBLIP_MoreComing) ) {
         // After last frame, decode the data:
@@ -375,10 +380,6 @@ NSError *BLIPMakeError( int errorCode, NSString *message, ... )
         self.propertiesAvailable = self.complete = YES;
     }
 
-    if (onDataReceived && readData.length > 0) {
-        _encodedBody = nil;
-        onDataReceived(readData);
-    }
     return YES;
 }
 
