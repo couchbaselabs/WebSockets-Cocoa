@@ -15,6 +15,8 @@
 //  and limitations under the License.
 
 #import "BLIPProperties.h"
+#import "MYBuffer.h"
+#import "MYData.h"
 #import "Logging.h"
 #import "Test.h"
 #import "MYData.h"
@@ -86,6 +88,21 @@ static const char* kAbbreviations[] = {
     MYSliceMoveStart(&slice, lengthSize);
 
     return [[BLIPPackedProperties alloc] initWithData: data contents: slice];
+}
+
+
++ (BLIPProperties*) propertiesReadFromBuffer: (MYBuffer*)buffer
+                                          ok: (BOOL*)ok
+{
+    NSData* data = buffer.flattened;
+    ssize_t usedLength;
+    BLIPProperties* props = [self propertiesWithEncodedData: data usedLength: &usedLength];
+    if (props) {
+        MYSlice readSlice = [buffer readSliceOfMaxLength: usedLength];
+        Assert(readSlice.length == usedLength);
+    }
+    *ok = (usedLength >= 0);
+    return props;
 }
 
 

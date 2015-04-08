@@ -7,6 +7,7 @@
 //  Copyright (c) 2013 Couchbase, Inc. All rights reserved.
 
 #import <Foundation/Foundation.h>
+@class MYBuffer;
 
 
 /** A key/value property store, like a set of MIME or RFC822 headers (but without the weird details).
@@ -22,6 +23,9 @@
 */
 + (BLIPProperties*) propertiesWithEncodedData: (NSData*)data
                                    usedLength: (ssize_t*)usedLength;
+
++ (BLIPProperties*) propertiesReadFromBuffer: (MYBuffer*)buffer
+                                          ok: (BOOL*)ok;
 
 /** Returns an empty autoreleased instance. */
 + (BLIPProperties*) properties;

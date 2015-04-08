@@ -8,6 +8,7 @@
 
 #import <Foundation/Foundation.h>
 @class BLIPProperties, BLIPMutableProperties, BLIPMessage, BLIPRequest, BLIPResponse;
+@protocol MYReader;
 
 
 @protocol BLIPMessageSender <NSObject>
@@ -49,7 +50,7 @@ NSError *BLIPMakeError( int errorCode, NSString *message, ... ) __attribute__ ((
 
 /** The onDataReceived callback allows for streaming incoming message data. If it's set, then as each frame of data arrives the -BLIPMessage:didReceiveData: method will be called. The .body property will _not_ be set.
     (Note: If the message is compressed, onDataReceived won't be called while data arrives, just once at the end after decompression. This may be improved in the future.) */
-@property (strong) void (^onDataReceived)(NSData*);
+@property (strong) void (^onDataReceived)(id<MYReader>);
 
 /** Called when the message has been completely sent over the socket. */
 @property (strong) void (^onSent)();
@@ -90,6 +91,11 @@ NSError *BLIPMakeError( int errorCode, NSString *message, ... ) __attribute__ ((
 
 /** Appends data to the body. */
 - (void) addToBody: (NSData*)data;
+
+/** Appends the contents of a stream to the body. Don't close the stream afterwards, or read from
+    it; the BLIPMessage will read from it later, while the message is being delivered, and close
+    it when it's done. */
+- (void) addStreamToBody: (NSInputStream*)stream;
 
 /** The message body as an NSString.
     The UTF-8 character encoding is used to convert. */

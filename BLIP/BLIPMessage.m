@@ -21,6 +21,7 @@
 #import "Test.h"
 #import "ExceptionUtils.h"
 #import "MYData.h"
+#import "MYBuffer.h"
 
 // From Google Toolbox For Mac <http://code.google.com/p/google-toolbox-for-mac/>
 #import "GTMNSData+zlib.h"
@@ -64,7 +65,7 @@ NSError *BLIPMakeError( int errorCode, NSString *message, ... )
             _propertiesAvailable = YES;
             _complete = YES;
         } else {
-            _encodedBody = body.mutableCopy;
+            _encodedBody = [[MYBuffer alloc] initWithData: body];
         }
         LogTo(BLIPLifecycle,@"INIT %@",self);
     }
@@ -80,12 +81,12 @@ NSError *BLIPMakeError( int errorCode, NSString *message, ... )
 
 - (NSString*) description
 {
-    NSUInteger length = (_body.length ?: _mutableBody.length) ?: _encodedBody.length;
+    NSUInteger length = (_body.length ?: _mutableBody.length) ?: _encodedBody.minLength;
     NSMutableString *desc = [NSMutableString stringWithFormat: @"%@[#%u, %lu bytes",
                              self.class,(unsigned int)_number, (unsigned long)length];
     if( _flags & kBLIP_Compressed ) {
-        if( _encodedBody && _encodedBody.length != length )
-            [desc appendFormat: @" (%lu gzipped)", (unsigned long)_encodedBody.length];
+        if( _encodedBody && _encodedBody.minLength != length )
+            [desc appendFormat: @" (%lu gzipped)", (unsigned long)_encodedBody.minLength];
         else
             [desc appendString: @", gzipped"];
     }
@@ -168,6 +169,12 @@ NSError *BLIPMakeError( int errorCode, NSString *message, ... )
 {
     Assert(_isMine && _isMutable);
     [self _addToBody: data];
+}
+
+- (void) addStreamToBody:(NSInputStream *)stream {
+    if (!_bodyStreams)
+        _bodyStreams = [NSMutableArray new];
+    [_bodyStreams addObject: stream];
 }
 
 
@@ -261,19 +268,19 @@ NSError *BLIPMakeError( int errorCode, NSString *message, ... )
     BLIPProperties *oldProps = _properties;
     _properties = [oldProps copy];
     
-    _encodedBody = [_properties.encodedData mutableCopy];
-    Assert(_encodedBody.length > 0);
+    _encodedBody = [[MYBuffer alloc] initWithData: _properties.encodedData];
+    Assert(_encodedBody.maxLength > 0);
 
     NSData *body = _body ?: _mutableBody;
     NSUInteger length = body.length;
     if( length > 0 ) {
-        if( self.compressed ) {
+        if( self.compressed )
             body = [NSData gtm_dataByGzippingData: body compressionLevel: 5];
-//            LogTo(BLIPVerbose,@"Compressed %@ to %lu bytes (%.0f%%)", self,(unsigned long)body.length,
-//                  body.length*100.0/length);
-        }
-        [_encodedBody appendData: body];
+        [_encodedBody writeData: body];
     }
+    for (NSInputStream* stream in _bodyStreams)
+        [_encodedBody writeContentsOfStream: stream];
+    _bodyStreams = nil;
 }
 
 
@@ -292,34 +299,35 @@ NSError *BLIPMakeError( int errorCode, NSString *message, ... )
     Assert(_encodedBody);
     if( _bytesWritten==0 )
         LogTo(BLIP,@"Now sending %@",self);
-    ssize_t lengthToWrite = _encodedBody.length - _bytesWritten;
-    if( lengthToWrite <= 0 && _bytesWritten > 0 )
-        return nil; // done
-    UInt16 flags = _flags;
-    size_t headerSize = MYLengthOfVarUInt(_number) + MYLengthOfVarUInt(flags | kBLIP_MoreComing);
-    maxSize -= headerSize;
-    if( lengthToWrite > maxSize ) {
-        lengthToWrite = maxSize;
-        flags |= kBLIP_MoreComing;
-        LogTo(BLIPVerbose,@"%@ pushing frame, bytes %lu-%lu", self, (long)_bytesWritten, _bytesWritten+lengthToWrite);
-    } else {
+    UInt16 flags = _flags | kBLIP_MoreComing;
+    size_t headerSize = MYLengthOfVarUInt(_number) + MYLengthOfVarUInt(flags);
+
+    // Allocate frame and read bytes from body into it:
+    NSUInteger frameSize = MIN(headerSize + _encodedBody.maxLength, maxSize);
+    NSMutableData* frame = [NSMutableData dataWithLength: frameSize];
+    ssize_t bytesRead = [_encodedBody readBytes: (uint8_t*)frame.mutableBytes + headerSize
+                                      maxLength: frameSize - headerSize];
+    if (bytesRead < 0)
+        return nil;
+    frame.length = headerSize + bytesRead;
+    _bytesWritten += bytesRead;
+
+    // Write the header:
+    *outMoreComing = !_encodedBody.atEnd;
+    if (!*outMoreComing)
         flags &= ~kBLIP_MoreComing;
-        LogTo(BLIPVerbose,@"%@ pushing frame, bytes %lu-%lu (finished)", self, (long)_bytesWritten, _bytesWritten+lengthToWrite);
-    }
+    void* pos = MYEncodeVarUInt(frame.mutableBytes, _number);
+    MYEncodeVarUInt(pos, flags);
 
-    NSMutableData* frame = [NSMutableData dataWithCapacity: headerSize + lengthToWrite];
-    [frame my_appendVarUInt: _number];
-    [frame my_appendVarUInt: flags];
-    [frame appendBytes: (UInt8*)_encodedBody.bytes + _bytesWritten length: lengthToWrite];
-    _bytesWritten += lengthToWrite;
-
-    *outMoreComing = (flags & kBLIP_MoreComing) != 0;
+    LogTo(BLIPVerbose,@"%@ pushing frame, bytes %lu-%lu%@", self,
+          (unsigned long)_bytesWritten-bytesRead, (unsigned long)_bytesWritten,
+          (*outMoreComing ? @"" : @" (finished)"));
     return frame;
 }
 
 
 // Parses the next incoming frame.
-- (BOOL) _receivedFrameWithFlags: (BLIPMessageFlags)flags body: (NSData*)body
+- (BOOL) _receivedFrameWithFlags: (BLIPMessageFlags)flags body: (NSData*)frameBody
 {
     Assert(!_isMine);
     Assert(_flags & kBLIP_MoreComing);
@@ -327,33 +335,28 @@ NSError *BLIPMakeError( int errorCode, NSString *message, ... )
     if (!self.isRequest)
         _flags = flags | kBLIP_MoreComing;
 
-    if( _encodedBody )
-        [_encodedBody appendData: body];
-    else
-        _encodedBody = [body mutableCopy];
+    if (!_encodedBody)
+        _encodedBody = [[MYBuffer alloc] init];
+    [_encodedBody writeData: frameBody];
     LogTo(BLIPVerbose,@"%@ rcvd bytes %lu-%lu, flags=%x",
-          self, (unsigned long)_encodedBody.length-body.length, (unsigned long)_encodedBody.length, flags);
+          self, (unsigned long)_encodedBody.minLength-frameBody.length, (unsigned long)_encodedBody.minLength, flags);
     
     if( ! _properties ) {
         // Try to extract the properties:
-        ssize_t usedLength;
-         _properties = [BLIPProperties propertiesWithEncodedData: _encodedBody usedLength: &usedLength];
+        BOOL ok;
+        _properties = [BLIPProperties propertiesReadFromBuffer: _encodedBody ok: &ok];
         if( _properties ) {
-            [_encodedBody replaceBytesInRange: NSMakeRange(0,usedLength)
-                                    withBytes: NULL length: 0];
             self.propertiesAvailable = YES;
-        } else if( usedLength < 0 )
+            [_connection _messageReceivedProperties: self];
+        } else if (!ok) {
             return NO;
-
-        [_connection _messageReceivedProperties: self];
+        }
     }
 
-    void (^onDataReceived)(NSData*) = (_properties && !self.compressed) ? _onDataReceived : nil;
-    NSData* readData = _encodedBody;
-    if (onDataReceived && readData.length > 0) {
-        LogTo(BLIPVerbose, @"%@ -> calling onDataReceived(%lu bytes)", self, readData.length);
-        _encodedBody = nil;
-        onDataReceived(readData);
+    void (^onDataReceived)(id<MYReader>) = (_properties && !self.compressed) ? _onDataReceived : nil;
+    if (onDataReceived) {
+        LogTo(BLIPVerbose, @"%@ -> calling onDataReceived(%lu bytes)", self, frameBody.length);
+        onDataReceived(_encodedBody);
     }
 
     if( ! (flags & kBLIP_MoreComing) ) {
@@ -361,21 +364,23 @@ NSError *BLIPMakeError( int errorCode, NSString *message, ... )
         _flags &= ~kBLIP_MoreComing;
         if( ! _properties )
             return NO;
-        NSUInteger encodedLength = _encodedBody.length;
+        _body = _encodedBody.flattened;
+        _encodedBody = nil;
+        NSUInteger encodedLength = _body.length;
         if( self.compressed && encodedLength>0 ) {
-            _body = [[NSData gtm_dataByInflatingData: _encodedBody] copy];
+            _body = [[NSData gtm_dataByInflatingData: _body] copy];
             if( ! _body ) {
                 Warn(@"Failed to decompress %@", self);
                 return NO;
             }
             LogTo(BLIPVerbose,@"Uncompressed %@ from %lu bytes (%.1fx)", self, (unsigned long)encodedLength,
                   _body.length/(double)encodedLength);
-            if (_onDataReceived)
-                _onDataReceived(_body);
-        } else if (!onDataReceived) {
-            _body = [_encodedBody copy];
+            if (_onDataReceived) {
+                MYBuffer* buffer = [[MYBuffer alloc] initWithData: _body];
+                _onDataReceived(buffer);
+                _body = buffer.flattened;
+            }
         }
-        _encodedBody = nil;
         _onDataReceived = nil;
         self.propertiesAvailable = self.complete = YES;
     }

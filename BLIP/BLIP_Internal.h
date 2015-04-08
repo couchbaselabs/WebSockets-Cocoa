@@ -9,6 +9,7 @@
 #import "BLIPRequest.h"
 #import "BLIPResponse.h"
 #import "BLIPProperties.h"
+@class MYBuffer;
 
 
 /* Private declarations and APIs for BLIP implementation. Not for use by clients! */
@@ -42,8 +43,9 @@ typedef BLIPMessageFlags BLIPMessageType;
     UInt32 _number;
     BLIPProperties *_properties;
     NSData *_body;
-    NSMutableData *_encodedBody;
+    MYBuffer *_encodedBody;
     NSMutableData *_mutableBody;
+    NSMutableArray* _bodyStreams;
     BOOL _isMine, _isMutable, _sent, _propertiesAvailable, _complete;
     NSInteger _bytesWritten;
     id _representedObject;
