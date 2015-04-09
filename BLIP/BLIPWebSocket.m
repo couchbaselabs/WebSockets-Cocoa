@@ -30,6 +30,7 @@
 
 @interface BLIPWebSocket () <WebSocketDelegate>
 @property (readwrite) NSError* error;
+@property (readwrite) BOOL active;
 @end
 
 
@@ -47,11 +48,13 @@
 
     UInt32 _numRequestsReceived;
     NSMutableDictionary *_pendingRequests, *_pendingResponses;
+    NSUInteger _poppedMessageCount;
 
     BLIPDispatcher* _dispatcher;
 }
 
-@synthesize dispatchPartialMessages=_dispatchPartialMessages;
+@synthesize error=_error, webSocket=_webSocket, dispatchPartialMessages=_dispatchPartialMessages,
+            active=_active;
 
 
 // Public API; Designated initializer
@@ -104,12 +107,20 @@
 }
 
 
+// Public API
 - (NSURL*) URL {
     return ((WebSocketClient*)_webSocket).URL;
 }
 
 
-@synthesize error=_error, webSocket=_webSocket;
+- (void) updateActive {
+    BOOL active = _outBox.count || _pendingRequests.count ||
+                    _pendingResponses.count || _poppedMessageCount;
+    if (active != _active) {
+        LogTo(BLIPVerbose, @"%@ active = %@", self, (active ?@"YES" : @"NO"));
+        self.active = active;
+    }
+}
 
 
 #pragma mark - OPEN/CLOSE:
@@ -239,7 +250,7 @@
     if( ! _outBox )
         _outBox = [[NSMutableArray alloc] init];
     [_outBox insertObject: msg atIndex: index];
-    
+
     if( isNew ) {
         LogTo(BLIP,@"%@ queuing outgoing %@ at index %li",self,msg,(long)index);
         if( n==0 && _webSocketIsOpen ) {
@@ -248,6 +259,7 @@
             });
         }
     }
+    [self updateActive];
 }
 
 
@@ -264,7 +276,8 @@
         [q _assignedNumber: ++_numRequestsSent];
         if( response ) {
             [response _assignedNumber: _numRequestsSent];
-            [self _addPendingResponse: response];
+            _pendingResponses[$object(response.number)] = response;
+            [self updateActive];
         }
         [self _queueMessage: q isNew: YES];
         result = YES;
@@ -289,6 +302,7 @@
         // Pop first message in queue:
         BLIPMessage *msg = _outBox[0];
         [_outBox removeObjectAtIndex: 0];
+        ++_poppedMessageCount; // remember that this message is still active
         
         // As an optimization, allow message to send a big frame unless there's a higher-priority
         // message right behind it:
@@ -313,6 +327,8 @@
                     if (onSent)
                         dispatch_async(_delegateQueue, onSent);
                 }
+                --_poppedMessageCount;
+                [self updateActive];
             });
         });
     } else {
@@ -322,11 +338,6 @@
 
 
 #pragma mark - RECEIVING FRAMES:
-
-
-- (void) _addPendingResponse: (BLIPResponse*)response {
-    _pendingResponses[$object(response.number)] = response;
-}
 
 
 // WebSocket delegate method
@@ -426,6 +437,7 @@
                        complete: (BOOL)complete
                      forMessage: (BLIPMessage*)message
 {
+    [self updateActive];
     dispatch_async(_delegateQueue, ^{
         BOOL ok = [message _receivedFrameWithFlags: flags body: body];
         if (!ok) {

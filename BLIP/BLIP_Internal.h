@@ -47,7 +47,7 @@ typedef BLIPMessageFlags BLIPMessageType;
     NSMutableData *_mutableBody;
     NSMutableArray* _bodyStreams;
     BOOL _isMine, _isMutable, _sent, _propertiesAvailable, _complete;
-    NSInteger _bytesWritten;
+    NSInteger _bytesWritten, _bytesReceived;
     id _representedObject;
 }
 @property BOOL sent, propertiesAvailable, complete;

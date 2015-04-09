@@ -335,11 +335,12 @@ NSError *BLIPMakeError( int errorCode, NSString *message, ... )
     if (!self.isRequest)
         _flags = flags | kBLIP_MoreComing;
 
+    _bytesReceived += frameBody.length;
     if (!_encodedBody)
         _encodedBody = [[MYBuffer alloc] init];
     [_encodedBody writeData: frameBody];
     LogTo(BLIPVerbose,@"%@ rcvd bytes %lu-%lu, flags=%x",
-          self, (unsigned long)_encodedBody.minLength-frameBody.length, (unsigned long)_encodedBody.minLength, flags);
+          self, (unsigned long)_bytesReceived-frameBody.length, (unsigned long)_bytesReceived, flags);
     
     if( ! _properties ) {
         // Try to extract the properties:

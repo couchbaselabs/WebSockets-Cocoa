@@ -59,6 +59,9 @@
     The request's matching response object will be returned, or nil if the request couldn't be sent. */
 - (BLIPResponse*) sendRequest: (BLIPRequest*)request;
 
+/** Are any messages currently being sent or received? (Observable) */
+@property (readonly) BOOL active;
+
 @end
 
 
