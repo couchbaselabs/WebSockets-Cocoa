@@ -6,6 +6,7 @@
 //  Copyright 2008-2013 Jens Alfke.
 //  Copyright (c) 2013 Couchbase, Inc. All rights reserved.
 
+#import "BLIPWebSocket.h"
 #import "BLIPRequest.h"
 #import "BLIPResponse.h"
 #import "BLIPProperties.h"
@@ -35,10 +36,17 @@ typedef NS_OPTIONS(UInt8, BLIPMessageFlags) {
 typedef BLIPMessageFlags BLIPMessageType;
 
 
+@interface BLIPWebSocket ()
+- (BOOL) _sendRequest: (BLIPRequest*)q response: (BLIPResponse*)response;
+- (BOOL) _sendResponse: (BLIPResponse*)response;
+- (void) _messageReceivedProperties: (BLIPMessage*)message;
+@end
+
+
 @interface BLIPMessage ()
 {
     @protected
-    id<BLIPMessageSender> _connection;
+    BLIPWebSocket* _connection;
     BLIPMessageFlags _flags;
     UInt32 _number;
     NSDictionary *_properties;
@@ -58,7 +66,7 @@ typedef BLIPMessageFlags BLIPMessageType;
 
 
 @interface BLIPMessage ()
-- (instancetype) _initWithConnection: (id<BLIPMessageSender>)connection
+- (instancetype) _initWithConnection: (BLIPWebSocket*)connection
                               isMine: (BOOL)isMine
                                flags: (BLIPMessageFlags)flags
                               number: (UInt32)msgNo
@@ -72,7 +80,7 @@ typedef BLIPMessageFlags BLIPMessageType;
 
 
 @interface BLIPRequest ()
-- (instancetype) _initWithConnection: (id<BLIPMessageSender>)connection
+- (instancetype) _initWithConnection: (BLIPWebSocket*)connection
                                 body: (NSData*)body
                           properties: (NSDictionary*)properties;
 @end

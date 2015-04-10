@@ -7,16 +7,8 @@
 //  Copyright (c) 2013 Couchbase, Inc. All rights reserved.
 
 #import <Foundation/Foundation.h>
-@class BLIPMessage, BLIPRequest, BLIPResponse;
+@class BLIPMessage, BLIPRequest, BLIPResponse, BLIPWebSocket;
 @protocol MYReader;
-
-
-@protocol BLIPMessageSender <NSObject>
-- (BOOL) _sendRequest: (BLIPRequest*)q response: (BLIPResponse*)response;
-- (BOOL) _sendResponse: (BLIPResponse*)response;
-@property (readonly) NSError* error;
-- (void) _messageReceivedProperties: (BLIPMessage*)message;
-@end
 
 
 /** NSError domain and codes for BLIP */
@@ -46,7 +38,7 @@ NSError *BLIPMakeError( int errorCode, NSString *message, ... ) __attribute__ ((
 @interface BLIPMessage : NSObject
 
 /** The BLIPWebSocket associated with this message. */
-@property (readonly,strong) id<BLIPMessageSender> connection;
+@property (readonly,strong) BLIPWebSocket* connection;
 
 /** The onDataReceived callback allows for streaming incoming message data. If it's set, the block
     will be called every time more data arrives. The block can read data from the MYReader if it

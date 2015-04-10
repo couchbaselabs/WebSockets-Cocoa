@@ -15,6 +15,7 @@
 //  and limitations under the License.
 
 #import "BLIPRequest.h"
+#import "BLIPWebSocket.h"
 #import "BLIP_Internal.h"
 
 #import "Logging.h"
@@ -28,7 +29,7 @@
 }
 
 
-- (instancetype) _initWithConnection: (id<BLIPMessageSender>)connection
+- (instancetype) _initWithConnection: (BLIPWebSocket*)connection
                                 body: (NSData*)body
                           properties: (NSDictionary*)properties
 {
@@ -73,9 +74,9 @@
 
 - (BOOL) noReply                            {return (_flags & kBLIP_NoReply) != 0;}
 - (void) setNoReply: (BOOL)noReply          {[self _setFlag: kBLIP_NoReply value: noReply];}
-- (id<BLIPMessageSender>) connection        {return _connection;}
+- (BLIPWebSocket*) connection        {return _connection;}
 
-- (void) setConnection: (id<BLIPMessageSender>)conn {
+- (void) setConnection: (BLIPWebSocket*)conn {
     Assert(_isMine && !_sent,@"Connection can only be set before sending");
      _connection = conn;
 }

@@ -216,7 +216,7 @@
         // Since a particular BLIPRequest can only be sent once, make a copy of it to send:
         request = [request mutableCopy];
     }
-    id<BLIPMessageSender> itsConnection = request.connection;
+    BLIPWebSocket* itsConnection = request.connection;
     if (itsConnection==nil)
         request.connection = self;
     else

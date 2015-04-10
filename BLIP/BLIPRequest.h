@@ -35,7 +35,7 @@
 /** BLIPRequest extends the -connection property to be settable.
     This allows a request to be created without a connection (i.e. before the connection is created).
     It can later be sent by setting the connection property and calling -send. */
-@property (strong) id<BLIPMessageSender> connection;
+@property (strong) BLIPWebSocket* connection;
 
 /** Does this request not need a response?
     This property can only be set before sending the request. */

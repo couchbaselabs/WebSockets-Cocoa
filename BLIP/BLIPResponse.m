@@ -14,6 +14,7 @@
 //  and limitations under the License.
 
 #import "BLIPResponse.h"
+#import "BLIPWebSocket.h"
 #import "BLIP_Internal.h"
 
 #import "Logging.h"

@@ -15,6 +15,7 @@
 //  and limitations under the License.
 
 #import "BLIPMessage.h"
+#import "BLIPWebSocket.h"
 #import "BLIP_Internal.h"
 
 #import "Logging.h"
@@ -46,7 +47,7 @@ NSError *BLIPMakeError( int errorCode, NSString *message, ... ) {
 @synthesize onDataReceived=_onDataReceived, onDataSent=_onDataSent, onSent=_onSent;
 
 
-- (instancetype) _initWithConnection: (id<BLIPMessageSender>)connection
+- (instancetype) _initWithConnection: (BLIPWebSocket*)connection
                               isMine: (BOOL)isMine
                                flags: (BLIPMessageFlags)flags
                               number: (UInt32)msgNo

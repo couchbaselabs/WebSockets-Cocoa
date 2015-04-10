@@ -12,7 +12,7 @@
 
 
 /** A BLIP connection layered on a WebSocket. */
-@interface BLIPWebSocket : NSObject <BLIPMessageSender>
+@interface BLIPWebSocket : NSObject
 
 - (instancetype) initWithURLRequest:(NSURLRequest *)request;
 - (instancetype) initWithURL:(NSURL *)url;
@@ -29,6 +29,8 @@
 
 /** The underlying WebSocket. */
 @property (readonly) WebSocket* webSocket;
+
+@property (readonly) NSError* error;
 
 - (BOOL) connect: (NSError**)outError;
 
