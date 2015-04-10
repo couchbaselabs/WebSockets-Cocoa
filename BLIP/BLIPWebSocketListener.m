@@ -7,8 +7,8 @@
 //
 
 #import "BLIPWebSocketListener.h"
+#import "BLIPWebSocketConnection.h"
 #import "WebSocketListener.h"
-#import "BLIPWebSocket.h"
 #import "Logging.h"
 
 
@@ -18,20 +18,20 @@
 
 @implementation BLIPWebSocketListener
 {
-    id<BLIPWebSocketDelegate> _blipDelegate;
+    id<BLIPConnectionDelegate> _blipDelegate;
     dispatch_queue_t _delegateQueue;
     NSMutableSet* _openSockets;
 }
 
 - (instancetype) initWithPath: (NSString*)path
-                     delegate: (id<BLIPWebSocketDelegate>)delegate
+                     delegate: (id<BLIPConnectionDelegate>)delegate
 {
     return [self initWithPath: path delegate: delegate queue: nil];
 }
 
 
 - (instancetype) initWithPath: (NSString*)path
-                     delegate: (id<BLIPWebSocketDelegate>)delegate
+                     delegate: (id<BLIPConnectionDelegate>)delegate
                         queue: (dispatch_queue_t)queue;
 {
     self = [super initWithPath: path delegate: self];
@@ -45,7 +45,7 @@
 
 
 - (void) webSocketDidOpen:(WebSocket *)ws {
-    BLIPWebSocket* b = [[BLIPWebSocket alloc] initWithWebSocket: ws];
+    BLIPWebSocketConnection* b = [[BLIPWebSocketConnection alloc] initWithWebSocket: ws];
     [_openSockets addObject: b];    //FIX: How to remove it since I'm not the delegate when it closes??
     LogTo(BLIP, @"Listener got connection: %@", b);
     dispatch_async(_delegateQueue, ^{
@@ -54,7 +54,7 @@
 }
 
 
-- (void)blipWebSocketDidOpen:(BLIPWebSocket*)b {
+- (void)blipWebSocketDidOpen:(BLIPConnection*)b {
     [b setDelegate: _blipDelegate queue: _delegateQueue];
 }
 

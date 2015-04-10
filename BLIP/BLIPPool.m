@@ -14,16 +14,16 @@
 //  and limitations under the License.
 
 #import "BLIPPool.h"
-#import "BLIPWebSocket.h"
+#import "BLIPWebSocketConnection.h"
 
 
-@interface BLIPPool () <BLIPWebSocketDelegate>
+@interface BLIPPool () <BLIPConnectionDelegate>
 @end
 
 
 @implementation BLIPPool
 {
-    __weak id<BLIPWebSocketDelegate> _delegate;
+    __weak id<BLIPConnectionDelegate> _delegate;
     dispatch_queue_t _queue;
     NSMutableDictionary* _sockets;
 }
@@ -32,7 +32,7 @@
 @synthesize delegate=_delegate;
 
 
-- (instancetype) initWithDelegate: (id<BLIPWebSocketDelegate>)delegate
+- (instancetype) initWithDelegate: (id<BLIPConnectionDelegate>)delegate
          dispatchQueue: (dispatch_queue_t)queue
 {
     self = [super init];
@@ -50,18 +50,18 @@
 }
 
 
-// Returns an already-open BLIPWebSocket to use to communicate with a given URL.
-- (BLIPWebSocket*) existingSocketToURL: (NSURL*)url error: (NSError**)outError {
+// Returns an already-open BLIPWebSocketConnection to use to communicate with a given URL.
+- (BLIPWebSocketConnection*) existingSocketToURL: (NSURL*)url error: (NSError**)outError {
     @synchronized(self) {
         return _sockets[url];
     }
 }
 
 
-// Returns an open BLIPWebSocket to use to communicate with a given URL.
-- (BLIPWebSocket*) socketToURL: (NSURL*)url error: (NSError**)outError {
+// Returns an open BLIPWebSocketConnection to use to communicate with a given URL.
+- (BLIPWebSocketConnection*) socketToURL: (NSURL*)url error: (NSError**)outError {
     @synchronized(self) {
-        BLIPWebSocket* socket = _sockets[url];
+        BLIPWebSocketConnection* socket = _sockets[url];
         if (!socket) {
             if (!_sockets) {
                 // I'm closed already
@@ -69,7 +69,7 @@
                     *outError = nil;
                 return nil;
             }
-            socket = [[BLIPWebSocket alloc] initWithURL: url];
+            socket = [[BLIPWebSocketConnection alloc] initWithURL: url];
             [socket setDelegate: self queue: _queue];
             if (![socket connect: outError])
                 return nil;
@@ -80,7 +80,7 @@
 }
 
 
-- (void) forgetSocket: (BLIPWebSocket*)webSocket {
+- (void) forgetSocket: (BLIPConnection*)webSocket {
     @synchronized(self) {
         [_sockets removeObjectForKey: webSocket.URL];
     }
@@ -94,7 +94,7 @@
         _sockets = nil; // marks that I'm closed
     }
     for (NSURL* url in sockets) {
-        BLIPWebSocket* socket = sockets[url];
+        BLIPWebSocketConnection* socket = sockets[url];
         [socket closeWithCode: code reason: reason];
     }
 }
@@ -110,38 +110,38 @@
 // These forward to the delegate, and didClose/didFail also forget the socket:
 
 
-- (void)blipWebSocketDidOpen:(BLIPWebSocket*)webSocket {
-    id<BLIPWebSocketDelegate> delegate = _delegate;
-    if ([delegate respondsToSelector: @selector(blipWebSocketDidOpen:)])
-        [delegate blipWebSocketDidOpen: webSocket];
+- (void)blipConnectionDidOpen:(BLIPConnection*)webSocket {
+    id<BLIPConnectionDelegate> delegate = _delegate;
+    if ([delegate respondsToSelector: @selector(blipConnectionDidOpen:)])
+        [delegate blipConnectionDidOpen: webSocket];
 }
 
-- (void)blipWebSocket: (BLIPWebSocket*)webSocket didFailWithError:(NSError *)error {
+- (void)blipConnection: (BLIPConnection*)webSocket didFailWithError:(NSError *)error {
     [self forgetSocket: webSocket];
-    id<BLIPWebSocketDelegate> delegate = _delegate;
-    if ([delegate respondsToSelector: @selector(blipWebSocket:didFailWithError:)])
-        [delegate blipWebSocket: webSocket didFailWithError: error];
+    id<BLIPConnectionDelegate> delegate = _delegate;
+    if ([delegate respondsToSelector: @selector(blipConnection:didFailWithError:)])
+        [delegate blipConnection: webSocket didFailWithError: error];
 }
 
-- (void)blipWebSocket: (BLIPWebSocket*)webSocket
+- (void)blipConnection: (BLIPConnection*)webSocket
     didCloseWithError: (NSError*)error
 {
     [self forgetSocket: webSocket];
-    id<BLIPWebSocketDelegate> delegate = _delegate;
-    if ([delegate respondsToSelector: @selector(blipWebSocket:didCloseWithError:)])
-        [delegate blipWebSocket: webSocket didCloseWithError: error];
+    id<BLIPConnectionDelegate> delegate = _delegate;
+    if ([delegate respondsToSelector: @selector(blipConnection:didCloseWithError:)])
+        [delegate blipConnection: webSocket didCloseWithError: error];
 }
 
-- (BOOL) blipWebSocket: (BLIPWebSocket*)webSocket receivedRequest: (BLIPRequest*)request {
-    id<BLIPWebSocketDelegate> delegate = _delegate;
-    return [delegate respondsToSelector: @selector(blipWebSocket:receivedRequest:)]
-        && [delegate blipWebSocket: webSocket receivedRequest: request];
+- (BOOL) blipConnection: (BLIPConnection*)webSocket receivedRequest: (BLIPRequest*)request {
+    id<BLIPConnectionDelegate> delegate = _delegate;
+    return [delegate respondsToSelector: @selector(blipConnection:receivedRequest:)]
+        && [delegate blipConnection: webSocket receivedRequest: request];
 }
 
-- (void) blipWebSocket: (BLIPWebSocket*)webSocket receivedResponse: (BLIPResponse*)response {
-    id<BLIPWebSocketDelegate> delegate = _delegate;
-    if ([delegate respondsToSelector: @selector(blipWebSocket:receivedResponse:)])
-        [delegate blipWebSocket: webSocket receivedResponse: response];
+- (void) blipConnection: (BLIPConnection*)webSocket receivedResponse: (BLIPResponse*)response {
+    id<BLIPConnectionDelegate> delegate = _delegate;
+    if ([delegate respondsToSelector: @selector(blipConnection:receivedResponse:)])
+        [delegate blipConnection: webSocket receivedResponse: response];
 }
 
 

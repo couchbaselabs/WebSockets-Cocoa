@@ -15,7 +15,7 @@
 //  and limitations under the License.
 
 #import "BLIPMessage.h"
-#import "BLIPWebSocket.h"
+#import "BLIPConnection.h"
 #import "BLIP_Internal.h"
 
 #import "Logging.h"
@@ -47,7 +47,7 @@ NSError *BLIPMakeError( int errorCode, NSString *message, ... ) {
 @synthesize onDataReceived=_onDataReceived, onDataSent=_onDataSent, onSent=_onSent;
 
 
-- (instancetype) _initWithConnection: (BLIPWebSocket*)connection
+- (instancetype) _initWithConnection: (BLIPConnection*)connection
                               isMine: (BOOL)isMine
                                flags: (BLIPMessageFlags)flags
                               number: (UInt32)msgNo
@@ -269,7 +269,7 @@ NSError *BLIPMakeError( int errorCode, NSString *message, ... ) {
 
 
 // Generates the next outgoing frame.
-- (NSData*) nextWebSocketFrameWithMaxSize: (UInt16)maxSize moreComing: (BOOL*)outMoreComing {
+- (NSData*) nextFrameWithMaxSize: (UInt16)maxSize moreComing: (BOOL*)outMoreComing {
     Assert(_number!=0);
     Assert(_isMine);
     Assert(_encodedBody);

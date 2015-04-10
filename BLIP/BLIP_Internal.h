@@ -6,7 +6,7 @@
 //  Copyright 2008-2013 Jens Alfke.
 //  Copyright (c) 2013 Couchbase, Inc. All rights reserved.
 
-#import "BLIPWebSocket.h"
+#import "BLIPConnection.h"
 #import "BLIPRequest.h"
 #import "BLIPResponse.h"
 #import "BLIPProperties.h"
@@ -36,7 +36,7 @@ typedef NS_OPTIONS(UInt8, BLIPMessageFlags) {
 typedef BLIPMessageFlags BLIPMessageType;
 
 
-@interface BLIPWebSocket ()
+@interface BLIPConnection ()
 - (BOOL) _sendRequest: (BLIPRequest*)q response: (BLIPResponse*)response;
 - (BOOL) _sendResponse: (BLIPResponse*)response;
 - (void) _messageReceivedProperties: (BLIPMessage*)message;
@@ -46,7 +46,7 @@ typedef BLIPMessageFlags BLIPMessageType;
 @interface BLIPMessage ()
 {
     @protected
-    BLIPWebSocket* _connection;
+    BLIPConnection* _connection;
     BLIPMessageFlags _flags;
     UInt32 _number;
     NSDictionary *_properties;
@@ -66,12 +66,12 @@ typedef BLIPMessageFlags BLIPMessageType;
 
 
 @interface BLIPMessage ()
-- (instancetype) _initWithConnection: (BLIPWebSocket*)connection
+- (instancetype) _initWithConnection: (BLIPConnection*)connection
                               isMine: (BOOL)isMine
                                flags: (BLIPMessageFlags)flags
                               number: (UInt32)msgNo
                                 body: (NSData*)body;
-- (NSData*) nextWebSocketFrameWithMaxSize: (UInt16)maxSize moreComing: (BOOL*)outMoreComing;
+- (NSData*) nextFrameWithMaxSize: (UInt16)maxSize moreComing: (BOOL*)outMoreComing;
 @property (readonly) NSInteger _bytesWritten;
 - (void) _assignedNumber: (UInt32)number;
 - (BOOL) _receivedFrameWithFlags: (BLIPMessageFlags)flags body: (NSData*)body;
@@ -80,7 +80,7 @@ typedef BLIPMessageFlags BLIPMessageType;
 
 
 @interface BLIPRequest ()
-- (instancetype) _initWithConnection: (BLIPWebSocket*)connection
+- (instancetype) _initWithConnection: (BLIPConnection*)connection
                                 body: (NSData*)body
                           properties: (NSDictionary*)properties;
 @end

@@ -15,7 +15,7 @@
 //  and limitations under the License.
 
 #import "BLIPRequest.h"
-#import "BLIPWebSocket.h"
+#import "BLIPConnection.h"
 #import "BLIP_Internal.h"
 
 #import "Logging.h"
@@ -29,7 +29,7 @@
 }
 
 
-- (instancetype) _initWithConnection: (BLIPWebSocket*)connection
+- (instancetype) _initWithConnection: (BLIPConnection*)connection
                                 body: (NSData*)body
                           properties: (NSDictionary*)properties
 {
@@ -74,9 +74,9 @@
 
 - (BOOL) noReply                            {return (_flags & kBLIP_NoReply) != 0;}
 - (void) setNoReply: (BOOL)noReply          {[self _setFlag: kBLIP_NoReply value: noReply];}
-- (BLIPWebSocket*) connection        {return _connection;}
+- (BLIPConnection*) connection        {return _connection;}
 
-- (void) setConnection: (BLIPWebSocket*)conn {
+- (void) setConnection: (BLIPConnection*)conn {
     Assert(_isMine && !_sent,@"Connection can only be set before sending");
      _connection = conn;
 }
@@ -102,7 +102,7 @@
 }
 
 - (void) deferResponse {
-    // This will allocate _response, causing -repliedTo to become YES, so BLIPWebSocket won't
+    // This will allocate _response, causing -repliedTo to become YES, so BLIPConnection won't
     // send an automatic empty response after the current request handler returns.
     LogTo(BLIP,@"Deferring response to %@",self);
     [self response];

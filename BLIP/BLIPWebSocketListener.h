@@ -7,14 +7,14 @@
 //
 
 #import "WebSocketListener.h"
-#import "BLIPWebSocket.h"
+#import "BLIPConnection.h"
 
 @interface BLIPWebSocketListener : WebSocketListener
 
 - (instancetype) initWithPath: (NSString*)path
-                     delegate: (id<BLIPWebSocketDelegate>)delegate
+                     delegate: (id<BLIPConnectionDelegate>)delegate
                         queue: (dispatch_queue_t)queue;
 
-- (void)blipWebSocketDidOpen:(BLIPWebSocket*)webSocket;
+- (void)blipWebSocketDidOpen:(BLIPConnection*)webSocket;
 
 @end

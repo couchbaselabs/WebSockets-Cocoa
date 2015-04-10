@@ -1,43 +1,33 @@
 //
-//  BLIPWebSocket.h
+//  BLIPConnection.h
 //  WebSocket
 //
 //  Created by Jens Alfke on 4/1/13.
 //  Copyright (c) 2013 Couchbase, Inc. All rights reserved.
 
-#import "WebSocket.h"
 #import "BLIPMessage.h"
-@class BLIPRequest, BLIPResponse, BLIPDispatcher;
-@protocol BLIPWebSocketDelegate;
+@class BLIPRequest, BLIPResponse;
+@protocol BLIPConnectionDelegate;
 
 
-/** A BLIP connection layered on a WebSocket. */
-@interface BLIPWebSocket : NSObject
-
-- (instancetype) initWithURLRequest:(NSURLRequest *)request;
-- (instancetype) initWithURL:(NSURL *)url;
-
-- (instancetype) initWithWebSocket: (WebSocket*)webSocket;
+/** A network connection to a peer that can send and receive BLIP messages.
+    This is an abstract class that doesn't use any specific transport. Subclasses must use and
+    implement the methods declared in BLIPConnection+Transport.h. */
+@interface BLIPConnection : NSObject
 
 /** Attaches a delegate, and specifies what GCD queue it should be called on. */
-- (void) setDelegate: (id<BLIPWebSocketDelegate>)delegate
+- (void) setDelegate: (id<BLIPConnectionDelegate>)delegate
                queue: (dispatch_queue_t)delegateQueue;
 
 /** URL this socket is connected to, _if_ it's a client socket; if it's an incoming one received
-    by a BLIPWebSocketListener, this is nil. */
+    by a BLIPConnectionListener, this is nil. */
 @property (readonly) NSURL* URL;
-
-/** The underlying WebSocket. */
-@property (readonly) WebSocket* webSocket;
 
 @property (readonly) NSError* error;
 
 - (BOOL) connect: (NSError**)outError;
 
 - (void)close;
-- (void)closeWithCode:(WebSocketCloseCode)code reason:(NSString *)reason;
-
-@property (nonatomic) BLIPDispatcher* dispatcher;
 
 /** If set to YES, an incoming message will be dispatched to the delegate and/or dispatcher before it's complete, as soon as its properties are available. The application should then set a dataDelegate on the message to receive its data a frame at a time. */
 @property BOOL dispatchPartialMessages;
@@ -68,17 +58,17 @@
 
 
 
-/** The delegate messages that BLIPWebSocketDelegate will send.
+/** The delegate messages that BLIPConnection will send.
     All methods are optional. */
-@protocol BLIPWebSocketDelegate <NSObject>
+@protocol BLIPConnectionDelegate <NSObject>
 @optional
 
-- (void)blipWebSocketDidOpen:(BLIPWebSocket*)webSocket;
+- (void)blipConnectionDidOpen:(BLIPConnection*)connection;
 
-- (void)blipWebSocket: (BLIPWebSocket*)webSocket didFailWithError:(NSError *)error;
+- (void)blipConnection: (BLIPConnection*)connection didFailWithError:(NSError *)error;
 
-- (void)blipWebSocket: (BLIPWebSocket*)webSocket
-    didCloseWithError: (NSError*)error;
+- (void)blipConnection: (BLIPConnection*)connection
+     didCloseWithError: (NSError*)error;
 
 /** Called when a BLIPRequest is received from the peer, if there is no BLIPDispatcher
     rule to handle it.
@@ -88,10 +78,10 @@
     or error property, and send it.
     If it doesn't explicitly send a response, a default empty one will be sent;
     to prevent this, call -deferResponse on the request if you want to send a response later. */
-- (BOOL) blipWebSocket: (BLIPWebSocket*)webSocket receivedRequest: (BLIPRequest*)request;
+- (BOOL) blipConnection: (BLIPConnection*)connection receivedRequest: (BLIPRequest*)request;
 
 /** Called when a BLIPResponse (to one of your requests) is received from the peer.
     This is called <i>after</i> the response object's onComplete target, if any, is invoked.*/
-- (void) blipWebSocket: (BLIPWebSocket*)webSocket receivedResponse: (BLIPResponse*)response;
+- (void) blipConnection: (BLIPConnection*)connection receivedResponse: (BLIPResponse*)response;
 
 @end

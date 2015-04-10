@@ -14,19 +14,7 @@
 typedef void (^BLIPDispatchBlock)(BLIPMessage*);
 
 
-/** Routes BLIP messages to targets based on a series of rules.
- 
-    Every BLIPWebSocket has a BLIPDispatcher, which is initially empty, but you can add rules
-    to it.
- 
-    Every BLIPListener also has a dispatcher, which is inherited as the parent by every
-    connection that it accepts, so you can add rules to the listener's dispatcher to share them
-    between all connections.
- 
-    It's not necessary to use a dispatcher. Any undispatched requests will be sent to the
-    BLIPWebSocket's delegate's -connection:receivedRequest: method, which can do its own
-    custom handling. But it's often easier to use the dispatcher to associate handlers with
-    request based on property values. */
+/** Routes BLIP messages to targets based on a series of rules. */
 @interface BLIPDispatcher : NSObject 
 
 /** The inherited parent dispatcher.

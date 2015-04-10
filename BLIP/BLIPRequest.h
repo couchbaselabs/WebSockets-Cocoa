@@ -15,9 +15,9 @@
 
 /** Creates an outgoing request.
     The body may be nil.
-    The request is not associated with any BLIPWebSocket yet, so you must either set its
+    The request is not associated with any BLIPConnection yet, so you must either set its
     connection property before calling -send, or pass the request as a parameter to
-    -[BLIPWebSocket sendRequest:]. */
+    -[BLIPConnection sendRequest:]. */
 + (BLIPRequest*) requestWithBody: (NSData*)body;
 
 /** Creates an outgoing request.
@@ -26,16 +26,16 @@
 
 /** Creates an outgoing request.
     The body or properties may be nil.
-    The request is not associated with any BLIPWebSocket yet, so you must either set its
+    The request is not associated with any BLIPConnection yet, so you must either set its
     connection property before calling -send, or pass the request as a parameter to
-    -[BLIPWebSocket sendRequest:]. */
+    -[BLIPConnection sendRequest:]. */
 + (BLIPRequest*) requestWithBody: (NSData*)body
                       properties: (NSDictionary*)properties;
 
 /** BLIPRequest extends the -connection property to be settable.
     This allows a request to be created without a connection (i.e. before the connection is created).
     It can later be sent by setting the connection property and calling -send. */
-@property (strong) BLIPWebSocket* connection;
+@property (strong) BLIPConnection* connection;
 
 /** Does this request not need a response?
     This property can only be set before sending the request. */
