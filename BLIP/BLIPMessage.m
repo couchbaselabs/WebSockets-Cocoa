@@ -44,7 +44,7 @@ NSError *BLIPMakeError( int errorCode, NSString *message, ... )
 @implementation BLIPMessage
 
 
-@synthesize onDataReceived=_onDataReceived, onSent=_onSent;
+@synthesize onDataReceived=_onDataReceived, onDataSent=_onDataSent, onSent=_onSent;
 
 
 - (id) _initWithConnection: (id<BLIPMessageSender>)connection
@@ -297,10 +297,10 @@ NSError *BLIPMakeError( int errorCode, NSString *message, ... )
     Assert(_number!=0);
     Assert(_isMine);
     Assert(_encodedBody);
+    *outMoreComing = NO;
     if( _bytesWritten==0 )
         LogTo(BLIP,@"Now sending %@",self);
-    UInt16 flags = _flags | kBLIP_MoreComing;
-    size_t headerSize = MYLengthOfVarUInt(_number) + MYLengthOfVarUInt(flags);
+    size_t headerSize = MYLengthOfVarUInt(_number) + MYLengthOfVarUInt(_flags);
 
     // Allocate frame and read bytes from body into it:
     NSUInteger frameSize = MIN(headerSize + _encodedBody.maxLength, maxSize);
@@ -313,15 +313,22 @@ NSError *BLIPMakeError( int errorCode, NSString *message, ... )
     _bytesWritten += bytesRead;
 
     // Write the header:
-    *outMoreComing = !_encodedBody.atEnd;
-    if (!*outMoreComing)
-        flags &= ~kBLIP_MoreComing;
+    if (_encodedBody.atEnd) {
+        _flags &= ~kBLIP_MoreComing;
+    } else {
+        _flags |= kBLIP_MoreComing;
+        *outMoreComing = YES;
+    }
     void* pos = MYEncodeVarUInt(frame.mutableBytes, _number);
-    MYEncodeVarUInt(pos, flags);
+    MYEncodeVarUInt(pos, _flags);
 
     LogTo(BLIPVerbose,@"%@ pushing frame, bytes %lu-%lu%@", self,
           (unsigned long)_bytesWritten-bytesRead, (unsigned long)_bytesWritten,
           (*outMoreComing ? @"" : @" (finished)"));
+    if (_onDataSent)
+        _onDataSent(_bytesWritten);
+    if (!*outMoreComing)
+        self.complete = YES;
     return frame;
 }
 

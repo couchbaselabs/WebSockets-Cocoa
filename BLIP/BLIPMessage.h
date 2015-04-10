@@ -48,9 +48,16 @@ NSError *BLIPMakeError( int errorCode, NSString *message, ... ) __attribute__ ((
 /** The BLIPWebSocket associated with this message. */
 @property (readonly,strong) id<BLIPMessageSender> connection;
 
-/** The onDataReceived callback allows for streaming incoming message data. If it's set, then as each frame of data arrives the -BLIPMessage:didReceiveData: method will be called. The .body property will _not_ be set.
-    (Note: If the message is compressed, onDataReceived won't be called while data arrives, just once at the end after decompression. This may be improved in the future.) */
+/** The onDataReceived callback allows for streaming incoming message data. If it's set, the block
+    will be called every time more data arrives. The block can read data from the MYReader if it
+    wants. Any data left unread will appear in the next call, and any data unread when the message
+    is complete will be left in the .body property.
+    (Note: If the message is compressed, onDataReceived won't be called while data arrives, just
+    once at the end after decompression. This may be improved in the future.) */
 @property (strong) void (^onDataReceived)(id<MYReader>);
+
+/** Called after message data is sent over the socket. */
+@property (strong) void (^onDataSent)(uint64_t totalBytesSent);
 
 /** Called when the message has been completely sent over the socket. */
 @property (strong) void (^onSent)();
