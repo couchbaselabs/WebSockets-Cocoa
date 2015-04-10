@@ -41,7 +41,7 @@ typedef BLIPMessageFlags BLIPMessageType;
     id<BLIPMessageSender> _connection;
     BLIPMessageFlags _flags;
     UInt32 _number;
-    BLIPProperties *_properties;
+    NSDictionary *_properties;
     NSData *_body;
     MYBuffer *_encodedBody;
     NSMutableData *_mutableBody;
@@ -81,6 +81,6 @@ typedef BLIPMessageFlags BLIPMessageType;
 @interface BLIPResponse ()
 - (id) _initWithRequest: (BLIPRequest*)request;
 #if DEBUG
-- (id) _initIncomingWithProperties: (BLIPProperties*)properties body: (NSData*)body;
+- (id) _initIncomingWithProperties: (NSDictionary*)properties body: (NSData*)body;
 #endif
 @end

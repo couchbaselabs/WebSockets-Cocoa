@@ -38,11 +38,10 @@
                               number: 0
                                 body: body];
     if( self ) {
-        _isMutable = YES;
         if( body )
             self.body = body;
         if( properties )
-            [self.mutableProperties setAllProperties: properties];
+            _properties = [properties copy];
     }
     return self;
 }
@@ -66,14 +65,12 @@
 {
     Assert(self.complete);
     BLIPRequest *copy = [[self class] requestWithBody: self.body 
-                                           properties: self.properties.allProperties];
+                                           properties: self.properties];
     copy.compressed = self.compressed;
     copy.urgent = self.urgent;
     copy.noReply = self.noReply;
     return copy;
 }
-
-
 
 
 - (BOOL) noReply                            {return (_flags & kBLIP_NoReply) != 0;}

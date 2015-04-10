@@ -57,11 +57,12 @@ NSError *BLIPMakeError( int errorCode, NSString *message, ... )
     if (self != nil) {
         _connection = connection;
         _isMine = isMine;
+        _isMutable = isMine;
         _flags = flags;
         _number = msgNo;
         if( isMine ) {
             _body = body.copy;
-            _properties = [[BLIPMutableProperties alloc] init];
+            _properties = [[NSMutableDictionary alloc] init];
             _propertiesAvailable = YES;
             _complete = YES;
         } else {
@@ -105,7 +106,7 @@ NSError *BLIPMakeError( int errorCode, NSString *message, ... )
 - (NSString*) descriptionWithProperties
 {
     NSMutableString *desc = (NSMutableString*)self.description;
-    [desc appendFormat: @" %@", self.properties.allProperties];
+    [desc appendFormat: @" %@", self.properties];
     return desc;
 }
 
@@ -218,42 +219,32 @@ NSError *BLIPMakeError( int errorCode, NSString *message, ... )
 }
 
 
-- (BLIPProperties*) properties
+- (NSDictionary*) properties
 {
     return _properties;
 }
 
-- (BLIPMutableProperties*) mutableProperties
+- (NSMutableDictionary*) mutableProperties
 {
     Assert(_isMine && _isMutable);
-    return (BLIPMutableProperties*)_properties;
+    return (NSMutableDictionary*)_properties;
 }
 
-- (NSString*) valueOfProperty: (NSString*)property
+- (NSString*) objectForKeyedSubscript: (NSString*)key
 {
-    return [_properties valueOfProperty: property];
-}
-
-- (void) setValue: (NSString*)value ofProperty: (NSString*)property
-{
-    [self.mutableProperties setValue: value ofProperty: property];
-}
-
-- (NSString*)objectForKeyedSubscript:(NSString*)key
-{
-    return [_properties valueOfProperty: key];
+    return _properties[key];
 }
 
 - (void) setObject: (NSString*)value forKeyedSubscript:(NSString*)key
 {
-    [self.mutableProperties setValue: value ofProperty: key];
+    [self.mutableProperties setValue: value forKey: key];
 }
 
 
-- (NSString*) contentType               {return [_properties valueOfProperty: @"Content-Type"];}
-- (void) setContentType: (NSString*)t   {[self setValue: t ofProperty: @"Content-Type"];}
-- (NSString*) profile                   {return [_properties valueOfProperty: @"Profile"];}
-- (void) setProfile: (NSString*)p       {[self setValue: p ofProperty: @"Profile"];}
+- (NSString*) contentType               {return self[@"Content-Type"];}
+- (void) setContentType: (NSString*)t   {self[@"Content-Type"] = t;}
+- (NSString*) profile                   {return self[@"Profile"];}
+- (void) setProfile: (NSString*)p       {self[@"Profile"] = p;}
 
 
 #pragma mark -
@@ -265,10 +256,10 @@ NSError *BLIPMakeError( int errorCode, NSString *message, ... )
     Assert(_isMine && _isMutable);
     _isMutable = NO;
 
-    BLIPProperties *oldProps = _properties;
+    NSDictionary *oldProps = _properties;
     _properties = [oldProps copy];
     
-    _encodedBody = [[MYBuffer alloc] initWithData: _properties.encodedData];
+    _encodedBody = [[MYBuffer alloc] initWithData: BLIPEncodeProperties(_properties)];
     Assert(_encodedBody.maxLength > 0);
 
     NSData *body = _body ?: _mutableBody;
@@ -351,12 +342,12 @@ NSError *BLIPMakeError( int errorCode, NSString *message, ... )
     
     if( ! _properties ) {
         // Try to extract the properties:
-        BOOL ok;
-        _properties = [BLIPProperties propertiesReadFromBuffer: _encodedBody ok: &ok];
+        BOOL complete;
+        _properties = BLIPReadPropertiesFromBuffer(_encodedBody, &complete);
         if( _properties ) {
             self.propertiesAvailable = YES;
             [_connection _messageReceivedProperties: self];
-        } else if (!ok) {
+        } else if (complete) {
             return NO;
         }
     }

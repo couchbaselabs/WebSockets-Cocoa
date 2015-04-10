@@ -46,276 +46,61 @@ static const char* kAbbreviations[] = {
 
 
 
-// Concrete implementation that stores properties in a packed binary form.
-@interface BLIPPackedProperties : BLIPProperties
-{
-    NSData *_data;
-    int _count;
-    const char **_strings;
-    int _nStrings;
+static NSString* readCString(MYSlice* slice) {
+    const char* key = slice->bytes;
+    size_t len = strlen(key);
+    MYSliceMoveStart(slice, len+1);
+    if (len == 0)
+        return nil;
+    uint8_t first = (uint8_t)key[0];
+    if( first < ' ' && key[1]=='\0' ) {
+        // Single-control-character property string is an abbreviation:
+        if( first > kNAbbreviations )
+            return nil;
+        key = kAbbreviations[first-1];
+    }
+    return [NSString stringWithUTF8String: key];
 }
 
-- (instancetype) initWithData: (NSData*)data contents: (MYSlice)contents;
 
-@end
-
-
-
-// The base class just represents an immutable empty collection.
-@implementation BLIPProperties
-
-
-+ (BLIPProperties*) propertiesWithEncodedData: (NSData*)data usedLength: (ssize_t*)usedLength
-{
-    MYSlice slice = data.my_asSlice;
-    UInt64 length;
-    MYSlice props;
-    if (!MYSliceReadVarUInt(&slice, &length) || !MYSliceReadSlice(&slice, (size_t)length, &props)) {
-        *usedLength = 0;
+NSDictionary* BLIPParseProperties(MYSlice *data, BOOL* complete) {
+    MYSlice slice = *data;
+    uint64_t length;
+    if (!MYSliceReadVarUInt(&slice, &length) || slice.length < length) {
+        *complete = NO;
         return nil;
     }
-
-    *usedLength = slice.bytes - data.bytes;
-
+    *complete = YES;
     if (length == 0) {
-        return [BLIPProperties properties];
+        MYSliceMoveStart(data, 1);
+        return @{};
     }
-
-    // Copy the data (length + properties) and make a slice of just the properties part:
-    size_t lengthSize = props.bytes - data.bytes;
-    data = [data subdataWithRange: NSMakeRange(0, *usedLength)];
-    slice = data.my_asSlice;
-    MYSliceMoveStart(&slice, lengthSize);
-
-    return [[BLIPPackedProperties alloc] initWithData: data contents: slice];
+    MYSlice buf = MYMakeSlice(slice.bytes, length);
+    if (((const char*)slice.bytes)[buf.length - 1] != '\0')
+        return nil;     // checking for nul at end makes it safe to use strlen in readCString
+    NSMutableDictionary* result = [NSMutableDictionary new];
+    while (buf.length > 0) {
+        NSString* key = readCString(&buf);
+        if (!key)
+            return nil;
+        NSString* value = readCString(&buf);
+        if (!value)
+            return nil;
+        result[key] = value;
+    }
+    MYSliceMoveStartTo(data, buf.bytes);
+    return result;
 }
 
 
-+ (BLIPProperties*) propertiesReadFromBuffer: (MYBuffer*)buffer
-                                          ok: (BOOL*)ok
-{
-    NSData* data = buffer.flattened;
-    ssize_t usedLength;
-    BLIPProperties* props = [self propertiesWithEncodedData: data usedLength: &usedLength];
-    if (props) {
-        MYSlice readSlice = [buffer readSliceOfMaxLength: usedLength];
-        Assert(readSlice.length == usedLength);
-    }
-    *ok = (usedLength >= 0);
+NSDictionary* BLIPReadPropertiesFromBuffer(MYBuffer* buffer, BOOL *complete) {
+    MYSlice slice = buffer.flattened.my_asSlice;
+    MYSlice readSlice = slice;
+    NSDictionary* props = BLIPParseProperties(&readSlice, complete);
+    if (props)
+        [buffer readSliceOfMaxLength: slice.length - readSlice.length];
     return props;
 }
-
-
-- (id) copyWithZone: (NSZone*)zone
-{
-    return self;
-}
-
-- (id) mutableCopyWithZone: (NSZone*)zone
-{
-    return [[BLIPMutableProperties allocWithZone: zone] initWithDictionary: self.allProperties];
-}
-
-- (BOOL) isEqual: (id)other
-{
-    return [other isKindOfClass: [BLIPProperties class]]
-        && [self.allProperties isEqual: [other allProperties]];
-}
-
-- (NSString*) valueOfProperty: (NSString*)prop  {return nil;}
-- (NSString*)objectForKeyedSubscript:(NSString*)key {return nil;}
-- (NSDictionary*) allProperties                 {return @{};}
-- (NSUInteger) count                            {return 0;}
-- (NSUInteger) dataLength                       {return 1;}
-
-- (NSData*) encodedData
-{
-    // varint-encoded zero:
-    UInt8 len = 0;
-    return [NSData dataWithBytes: &len length: 1];
-}
-
-
-// Singleton empty instance
-+ (BLIPProperties*) properties
-{
-    static BLIPProperties *sEmptyInstance;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        sEmptyInstance = [[self alloc] init];
-    });
-    return sEmptyInstance;
-}
-
-
-@end
-
-
-
-/** Internal immutable subclass that keeps its contents in the packed data representation. */
-@implementation BLIPPackedProperties
-
-
-- (instancetype) initWithData: (NSData*)data contents: (MYSlice)contents {
-    self = [super init];
-    if (self != nil) {
-        if (contents.length == 0 || ((const char*)contents.bytes)[contents.length-1] != '\0')
-            goto fail;
-
-        // Copy data, then skip the length field:
-        _data = data;
-
-        // The data consists of consecutive NUL-terminated strings, alternating key/value:
-        int capacity = 0;
-        const char *end = MYSliceGetEnd(contents);
-        for( const char *str=contents.bytes; str < end; str += strlen(str)+1, _nStrings++ ) {
-            if( _nStrings >= capacity ) {
-                capacity = capacity ?(2*capacity) :4;
-                _strings = realloc(_strings, capacity*sizeof(const char*));
-            }
-            UInt8 first = (UInt8)str[0];
-            if( first>'\0' && first<' ' && str[1]=='\0' ) {
-                // Single-control-character property string is an abbreviation:
-                if( first > kNAbbreviations )
-                    goto fail;
-                _strings[_nStrings] = kAbbreviations[first-1];
-            } else
-                _strings[_nStrings] = str;
-        }
-        
-        // It's illegal for the data to end with a non-NUL or for there to be an odd number of strings:
-        if( (_nStrings & 1) )
-            goto fail;
-        
-        return self;
-            
-    fail:
-        Warn(@"BLIPProperties: invalid data");
-        return nil;
-    }
-    return self;
-}
-
-
-- (void) dealloc
-{
-    if( _strings ) free(_strings);
-}
-
-- (id) copyWithZone: (NSZone*)zone
-{
-    return self;
-}
-
-- (id) mutableCopyWithZone: (NSZone*)zone
-{
-    return [[BLIPMutableProperties allocWithZone: zone] initWithDictionary: self.allProperties];
-}
-
-
-- (NSString*) valueOfProperty: (NSString*)prop
-{
-    const char *propStr = [prop UTF8String];
-    Assert(propStr);
-    // Search in reverse order so that later values will take precedence over earlier ones.
-    for( int i=_nStrings-2; i>=0; i-=2 ) {
-        if( strcmp(propStr, _strings[i]) == 0 )
-            return @(_strings[i+1]);
-    }
-    return nil;
-}
-
-- (NSString*)objectForKeyedSubscript:(NSString*)key
-{
-    return [self valueOfProperty: key];
-}
-
-
-- (NSDictionary*) allProperties
-{
-    NSMutableDictionary *props = [NSMutableDictionary dictionaryWithCapacity: _nStrings/2];
-    // Add values in forward order so that later ones will overwrite (take precedence over)
-    // earlier ones, which matches the behavior of -valueOfProperty.
-    for( int i=0; i<_nStrings; i+=2 ) {
-        NSString *key = [[NSString alloc] initWithUTF8String: _strings[i]];
-        NSString *value = [[NSString alloc] initWithUTF8String: _strings[i+1]];
-        if( key && value )
-            props[key] = value;
-    }
-    return props;
-}
-
-
-- (NSUInteger) count        {return _nStrings/2;}
-- (NSData*) encodedData     {return _data;}
-- (NSUInteger) dataLength   {return _data.length;}
-
-
-@end
-
-
-
-/** Mutable subclass that stores its properties in an NSMutableDictionary. */
-@implementation BLIPMutableProperties
-{
-    NSMutableDictionary *_properties;
-}
-
-
-+ (BLIPProperties*) properties
-{
-    return [[self alloc] initWithDictionary: nil];
-}
-
-- (instancetype) init
-{
-    self = [super init];
-    if (self != nil) {
-        _properties = [[NSMutableDictionary alloc] init];
-    }
-    return self;
-}
-
-- (instancetype) initWithDictionary: (NSDictionary*)dict
-{
-    self = [super init];
-    if (self != nil) {
-        _properties = dict ?[dict mutableCopy] :[[NSMutableDictionary alloc] init];
-    }
-    return self;
-}
-
-- (instancetype) initWithProperties: (BLIPProperties*)properties
-{
-    return [self initWithDictionary: [properties allProperties]];
-}
-
-
-- (id) copyWithZone: (NSZone*)zone
-{
-    ssize_t usedLength;
-    BLIPProperties *copy = [BLIPProperties propertiesWithEncodedData: self.encodedData usedLength: &usedLength];
-    Assert(copy);
-    return copy;
-}
-
-
-- (NSString*) valueOfProperty: (NSString*)prop
-{
-    return _properties[prop];
-}
-
-- (NSString*)objectForKeyedSubscript:(NSString*)key
-{
-    return _properties[key];
-}
-
-- (NSDictionary*) allProperties
-{
-    return _properties;
-}
-
-- (NSUInteger) count        {return _properties.count;}
 
 
 static void appendStr( NSMutableData *data, NSString *str ) {
@@ -330,106 +115,22 @@ static void appendStr( NSMutableData *data, NSString *str ) {
     [data appendBytes: utf8 length: size];
 }
 
-- (NSData*) encodedData
-{
+NSData* BLIPEncodeProperties(NSDictionary* properties) {
     static const int kPlaceholderLength = 1; // space to reserve for varint length
-    NSMutableData *data = [NSMutableData dataWithCapacity: 16*_properties.count];
+    NSMutableData *data = [NSMutableData dataWithCapacity: 16*properties.count];
     [data setLength: kPlaceholderLength];
-    for( NSString *name in _properties ) {
+    for( NSString *name in properties ) {
         appendStr(data,name);
-        appendStr(data,_properties[name]);
+        appendStr(data,properties[name]);
     }
-    
     NSUInteger length = data.length - kPlaceholderLength;
-
     UInt8 buf[10];
     UInt8* end = MYEncodeVarUInt(buf, length);
-    [data replaceBytesInRange: NSMakeRange(0, kPlaceholderLength) withBytes: buf length: end-buf];
+    [data replaceBytesInRange: NSMakeRange(0, kPlaceholderLength)
+                    withBytes: buf
+                       length: end-buf];
     return data;
 }
-
-    
-- (void) setValue: (NSString*)value ofProperty: (NSString*)prop
-{
-    Assert(prop.length>0);
-    if( value )
-        _properties[prop] = value;
-    else
-        [_properties removeObjectForKey: prop];
-}
-
-- (void) setObject: (NSString*)value forKeyedSubscript:(NSString*)key
-{
-    [self setValue: value ofProperty: key];
-}
-
-
-- (void) setAllProperties: (NSDictionary*)properties
-{
-    if( properties.count ) {
-        for( id key in properties ) {
-            Assert([key isKindOfClass: [NSString class]]);
-            Assert([key length] > 0);
-            Assert([properties[key] isKindOfClass: [NSString class]]);
-        }
-        [_properties setDictionary: properties];
-    } else
-        [_properties removeAllObjects];
-}
-
-
-@end
-
-
-
-#if 0
-TestCase(BLIPProperties) {
-    BLIPProperties *props;
-    
-    props = [BLIPProperties properties];
-    CAssert(props);
-    CAssertEq(props.count,0U);
-    Log(@"Empty properties:\n%@", props.allProperties);
-    NSData *data = props.encodedData;
-    Log(@"As data: %@", data);
-    CAssertEqual(data,[NSMutableData dataWithLength: 1]);
-    
-    BLIPMutableProperties *mprops = [props mutableCopy];
-    Log(@"Mutable copy:\n%@", mprops.allProperties);
-    data = mprops.encodedData;
-    Log(@"As data: %@", data);
-    CAssertEqual(data,[NSMutableData dataWithLength: 1]);
-    
-    ssize_t used;
-    props = [BLIPProperties propertiesWithEncodedData: data usedLength: &used];
-    CAssert(props != nil);
-    CAssertEq(used,(ssize_t)data.length);
-    CAssertEqual(props,mprops);
-    
-    [mprops setValue: @"Jens" ofProperty: @"First-Name"];
-    [mprops setValue: @"Alfke" ofProperty: @"Last-Name"];
-    [mprops setValue: @"" ofProperty: @"Empty-String"];
-    [mprops setValue: @"Z" ofProperty: @"A"];
-    Log(@"With properties:\n%@", mprops.allProperties);
-    data = mprops.encodedData;
-    Log(@"As data: %@", data);
-    
-    for( unsigned len=0; len<data.length; len++ ) {
-        props = [BLIPProperties propertiesWithEncodedData: [data subdataWithRange: NSMakeRange(0,len)]
-                                                                usedLength: &used];
-        CAssertEq(props,(id)nil);
-        CAssertEq(used,0);
-    }
-    props = [BLIPProperties propertiesWithEncodedData: data usedLength: &used];
-    CAssertEq(used,(ssize_t)data.length);
-    Log(@"Read back in:\n%@",props.allProperties);
-    CAssertEqual(props,mprops);
-    
-    NSDictionary *all = mprops.allProperties;
-    for( NSString *prop in all )
-        CAssertEqual([props valueOfProperty: prop],all[prop]);
-}
-#endif
 
 
 /*

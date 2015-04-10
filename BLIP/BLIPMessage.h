@@ -7,7 +7,7 @@
 //  Copyright (c) 2013 Couchbase, Inc. All rights reserved.
 
 #import <Foundation/Foundation.h>
-@class BLIPProperties, BLIPMutableProperties, BLIPMessage, BLIPRequest, BLIPResponse;
+@class BLIPMessage, BLIPRequest, BLIPResponse;
 @protocol MYReader;
 
 
@@ -121,10 +121,10 @@ NSError *BLIPMakeError( int errorCode, NSString *message, ... ) __attribute__ ((
 
 /** The message's properties, a dictionary-like object.
     Message properties are much like the headers in HTTP, MIME and RFC822. */
-@property (readonly) BLIPProperties* properties;
+@property (readonly) NSDictionary* properties;
 
 /** Mutable version of the message's properties; only available if this mesage is mutable. */
-@property (readonly) BLIPMutableProperties* mutableProperties;
+@property (readonly) NSMutableDictionary* mutableProperties;
 
 /** The value of the "Content-Type" property, which is by convention the MIME type of the body. */
 @property (copy) NSString *contentType;
@@ -133,15 +133,9 @@ NSError *BLIPMakeError( int errorCode, NSString *message, ... ) __attribute__ ((
 @property (copy) NSString *profile;
 
 /** A shortcut to get the value of a property. */
-- (NSString*) valueOfProperty: (NSString*)property;
-
-/** Same as -valueOfProperty:. Enables "[]" access in Xcode 4.4+ */
 - (NSString*)objectForKeyedSubscript:(NSString*)key;
 
 /** A shortcut to set the value of a property. A nil value deletes that property. */
-- (void) setValue: (NSString*)value ofProperty: (NSString*)property;
-
-/** Same as -setValue:ofProperty:. Enables "[]" access in Xcode 4.4+ */
 - (void) setObject: (NSString*)value forKeyedSubscript:(NSString*)key;
 
 /** Similar to -description, but also shows the properties and their values. */

@@ -35,13 +35,8 @@
                                number: request.number
                                  body: nil];
     if (self != nil) {
-        if( _isMine ) {
-            _isMutable = YES;
-            if( request.urgent )
-                _flags |= kBLIP_Urgent;
-        } else {
-            _flags |= kBLIP_MoreComing;
-        }
+        if( _isMine && request.urgent )
+            _flags |= kBLIP_Urgent;
     }
     return self;
 }
@@ -49,7 +44,7 @@
 
 #if DEBUG
 // For testing only
-- (id) _initIncomingWithProperties: (BLIPProperties*)properties body: (NSData*)body {
+- (id) _initIncomingWithProperties: (NSDictionary*)properties body: (NSData*)body {
     self = [self _initWithConnection: nil
                               isMine: NO
                                flags: kBLIP_MSG
@@ -70,7 +65,7 @@
     if( (_flags & kBLIP_TypeMask) != kBLIP_ERR )
         return nil;
     
-    NSMutableDictionary *userInfo = [[self.properties allProperties] mutableCopy];
+    NSMutableDictionary *userInfo = [_properties mutableCopy];
     NSString *domain = userInfo[@"Error-Domain"];
     int code = [userInfo[@"Error-Code"] intValue];
     if( domain==nil || code==0 ) {
@@ -93,22 +88,22 @@
         _body = nil;
         _mutableBody = nil;
         
-        BLIPMutableProperties *errorProps = [self.properties mutableCopy];
+        NSMutableDictionary *errorProps = [self.properties mutableCopy];
         if( ! errorProps )
-            errorProps = [[BLIPMutableProperties alloc] init];
+            errorProps = [[NSMutableDictionary alloc] init];
         NSDictionary *userInfo = error.userInfo;
         for( NSString *key in userInfo ) {
             id value = $castIf(NSString,userInfo[key]);
             if( value )
-                [errorProps setValue: value ofProperty: key];
+                errorProps[key] = value;
         }
-        [errorProps setValue: error.domain ofProperty: @"Error-Domain"];
-        [errorProps setValue: $sprintf(@"%li",(long)error.code) ofProperty: @"Error-Code"];
-         _properties = errorProps;
+        errorProps[@"Error-Domain"] = error.domain;
+        errorProps[@"Error-Code"] = $sprintf(@"%li",(long)error.code);
+        _properties = errorProps;
         
     } else {
         _flags |= kBLIP_RPY;
-        [self.mutableProperties setAllProperties: nil];
+        [self.mutableProperties removeAllObjects];
     }
 }
 

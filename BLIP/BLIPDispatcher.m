@@ -70,7 +70,7 @@
 
 - (BOOL) dispatchMessage: (BLIPMessage*)message
 {
-    NSDictionary *properties = message.properties.allProperties;
+    NSDictionary *properties = message.properties;
     NSUInteger n = _predicates.count;
     for( NSUInteger i=0; i<n; i++ ) {
         id p = _predicates[i];
