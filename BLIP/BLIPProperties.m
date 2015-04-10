@@ -53,9 +53,9 @@ static NSString* readCString(MYSlice* slice) {
     if (len == 0)
         return nil;
     uint8_t first = (uint8_t)key[0];
-    if( first < ' ' && key[1]=='\0' ) {
+    if (first < ' ' && key[1]=='\0') {
         // Single-control-character property string is an abbreviation:
-        if( first > kNAbbreviations )
+        if (first > kNAbbreviations)
             return nil;
         key = kAbbreviations[first-1];
     }
@@ -106,8 +106,8 @@ NSDictionary* BLIPReadPropertiesFromBuffer(MYBuffer* buffer, BOOL *complete) {
 static void appendStr( NSMutableData *data, NSString *str ) {
     const char *utf8 = [str UTF8String];
     size_t size = strlen(utf8)+1;
-    for( uint8_t i=0; i<kNAbbreviations; i++ )
-        if( memcmp(utf8,kAbbreviations[i],size)==0 ) {
+    for (uint8_t i=0; i<kNAbbreviations; i++)
+        if (memcmp(utf8,kAbbreviations[i],size)==0) {
             const UInt8 abbrev[2] = {i+1,0};
             [data appendBytes: &abbrev length: 2];
             return;
@@ -119,7 +119,7 @@ NSData* BLIPEncodeProperties(NSDictionary* properties) {
     static const int kPlaceholderLength = 1; // space to reserve for varint length
     NSMutableData *data = [NSMutableData dataWithCapacity: 16*properties.count];
     [data setLength: kPlaceholderLength];
-    for( NSString *name in properties ) {
+    for (NSString *name in properties) {
         appendStr(data,name);
         appendStr(data,properties[name]);
     }

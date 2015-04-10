@@ -217,7 +217,7 @@
         request = [request mutableCopy];
     }
     id<BLIPMessageSender> itsConnection = request.connection;
-    if( itsConnection==nil )
+    if (itsConnection==nil)
         request.connection = self;
     else
         Assert(itsConnection==self,@"%@ is already assigned to a different connection",request);
@@ -227,33 +227,33 @@
 
 - (void) _queueMessage: (BLIPMessage*)msg isNew: (BOOL)isNew {
     NSInteger n = _outBox.count, index;
-    if( msg.urgent && n > 1 ) {
+    if (msg.urgent && n > 1) {
         // High-priority gets queued after the last existing high-priority message,
         // leaving one regular-priority message in between if possible.
-        for( index=n-1; index>0; index-- ) {
+        for (index=n-1; index>0; index--) {
             BLIPMessage *otherMsg = _outBox[index];
-            if( [otherMsg urgent] ) {
+            if ([otherMsg urgent]) {
                 index = MIN(index+2, n);
                 break;
-            } else if( isNew && otherMsg._bytesWritten==0 ) {
+            } else if (isNew && otherMsg._bytesWritten==0) {
                 // But have to keep message starts in order
                 index = index+1;
                 break;
             }
         }
-        if( index==0 )
+        if (index==0)
             index = 1;
     } else {
         // Regular priority goes at the end of the queue:
         index = n;
     }
-    if( ! _outBox )
+    if (! _outBox)
         _outBox = [[NSMutableArray alloc] init];
     [_outBox insertObject: msg atIndex: index];
 
-    if( isNew ) {
+    if (isNew) {
         LogTo(BLIP,@"%@ queuing outgoing %@ at index %li",self,msg,(long)index);
-        if( n==0 && _webSocketIsOpen ) {
+        if (n==0 && _webSocketIsOpen) {
             dispatch_async(_websocketQueue, ^{
                 [self webSocketIsHungry: _webSocket];  // queue the first message now
             });
@@ -268,13 +268,13 @@
     Assert(!q.sent,@"message has already been sent");
     __block BOOL result;
     dispatch_sync(_websocketQueue, ^{
-        if( _webSocketIsOpen && _webSocket.state >= kWebSocketClosing ) {
+        if (_webSocketIsOpen && _webSocket.state >= kWebSocketClosing) {
             Warn(@"%@: Attempt to send a request after the connection has started closing: %@",self,q);
             result = NO;
             return;
         }
         [q _assignedNumber: ++_numRequestsSent];
-        if( response ) {
+        if (response) {
             [response _assignedNumber: _numRequestsSent];
             _pendingResponses[$object(response.number)] = response;
             [self updateActive];
@@ -298,7 +298,7 @@
 // WebSocket delegate method
 // Pull a frame from the outBox queue and send it to the WebSocket:
 - (void)webSocketIsHungry:(WebSocket *)ws {
-    if( _outBox.count > 0 ) {
+    if (_outBox.count > 0) {
         // Pop first message in queue:
         BLIPMessage *msg = _outBox[0];
         [_outBox removeObjectAtIndex: 0];
@@ -307,7 +307,7 @@
         // As an optimization, allow message to send a big frame unless there's a higher-priority
         // message right behind it:
         size_t frameSize = kDefaultFrameSize;
-        if( msg.urgent || _outBox.count==0 || ! [_outBox[0] urgent] )
+        if (msg.urgent || _outBox.count==0 || ! [_outBox[0] urgent])
             frameSize *= 4;
 
         // Ask the message to generate its next frame. Do this on the delegate queue:
@@ -377,19 +377,19 @@
         case kBLIP_MSG: {
             // Incoming request:
             BLIPRequest *request = _pendingRequests[key];
-            if( request ) {
+            if (request) {
                 // Continuation frame of a request:
-                if( complete ) {
+                if (complete) {
                     [_pendingRequests removeObjectForKey: key];
                 }
-            } else if( requestNumber == _numRequestsReceived+1 ) {
+            } else if (requestNumber == _numRequestsReceived+1) {
                 // Next new request:
                 request = [[BLIPRequest alloc] _initWithConnection: self
                                                             isMine: NO
                                                              flags: flags | kBLIP_MoreComing
                                                             number: requestNumber
                                                               body: nil];
-                if( ! complete )
+                if (! complete)
                     _pendingRequests[key] = request;
                 _numRequestsReceived++;
             } else {
@@ -406,14 +406,14 @@
         case kBLIP_RPY:
         case kBLIP_ERR: {
             BLIPResponse *response = _pendingResponses[key];
-            if( response ) {
-                if( complete ) {
+            if (response) {
+                if (complete) {
                     [_pendingResponses removeObjectForKey: key];
                 }
                 [self _receiveFrameWithFlags: flags body: body complete: complete forMessage: response];
 
             } else {
-                if( requestNumber <= _numRequestsSent )
+                if (requestNumber <= _numRequestsSent)
                     LogTo(BLIP,@"??? %@ got unexpected response frame to my msg #%u",
                           self,(unsigned int)requestNumber); //benign
                 else
@@ -445,7 +445,7 @@
                 [self _closeWithError: BLIPMakeError(kBLIPError_BadFrame,
                                                      @"Couldn't parse message frame")];
             });
-        } else if( complete && !self.dispatchPartialMessages ) {
+        } else if (complete && !self.dispatchPartialMessages) {
             if (message.isRequest)
                 [self _dispatchRequest: (BLIPRequest*)message];
             else
@@ -471,7 +471,7 @@
 
 // Public API
 - (BLIPDispatcher*) dispatcher {
-    if( ! _dispatcher ) {
+    if (! _dispatcher) {
         _dispatcher = [[BLIPDispatcher alloc] init];
     }
     return _dispatcher;
@@ -482,7 +482,7 @@
 - (BOOL) _dispatchMetaRequest: (BLIPRequest*)request {
 #if 0
     NSString* profile = request.profile;
-    if( [profile isEqualToString: kBLIPProfile_Bye] ) {
+    if ([profile isEqualToString: kBLIPProfile_Bye]) {
         [self _handleCloseRequest: request];
         return YES;
     }
@@ -497,7 +497,7 @@
     LogTo(BLIP,@"Dispatching %@",request.descriptionWithProperties);
     @try{
         BOOL handled;
-        if( request._flags & kBLIP_Meta )
+        if (request._flags & kBLIP_Meta)
             handled =[self _dispatchMetaRequest: request];
         else {
             handled = [self.dispatcher dispatchMessage: request];
@@ -509,7 +509,7 @@
             if (!handled) {
                 LogTo(BLIP,@"No handler found for incoming %@",request);
                 [request respondWithErrorCode: kBLIPError_NotFound message: @"No handler was found"];
-            } else if( ! request.noReply && ! request.repliedTo ) {
+            } else if (! request.noReply && ! request.repliedTo) {
                 LogTo(BLIP,@"Returning default empty response to %@",request);
                 [request respondWithData: nil contentType: nil];
             }

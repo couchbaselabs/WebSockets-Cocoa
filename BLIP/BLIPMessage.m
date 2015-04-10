@@ -29,8 +29,7 @@
 
 NSString* const BLIPErrorDomain = @"BLIP";
 
-NSError *BLIPMakeError( int errorCode, NSString *message, ... )
-{
+NSError *BLIPMakeError( int errorCode, NSString *message, ... ) {
     va_list args;
     va_start(args,message);
     message = [[NSString alloc] initWithFormat: message arguments: args];
@@ -47,11 +46,11 @@ NSError *BLIPMakeError( int errorCode, NSString *message, ... )
 @synthesize onDataReceived=_onDataReceived, onDataSent=_onDataSent, onSent=_onSent;
 
 
-- (id) _initWithConnection: (id<BLIPMessageSender>)connection
-                    isMine: (BOOL)isMine
-                     flags: (BLIPMessageFlags)flags
-                    number: (UInt32)msgNo
-                      body: (NSData*)body
+- (instancetype) _initWithConnection: (id<BLIPMessageSender>)connection
+                              isMine: (BOOL)isMine
+                               flags: (BLIPMessageFlags)flags
+                              number: (UInt32)msgNo
+                                body: (NSData*)body
 {
     self = [super init];
     if (self != nil) {
@@ -60,7 +59,7 @@ NSError *BLIPMakeError( int errorCode, NSString *message, ... )
         _isMutable = isMine;
         _flags = flags;
         _number = msgNo;
-        if( isMine ) {
+        if (isMine) {
             _body = body.copy;
             _properties = [[NSMutableDictionary alloc] init];
             _propertiesAvailable = YES;
@@ -80,22 +79,21 @@ NSError *BLIPMakeError( int errorCode, NSString *message, ... )
 #endif
 
 
-- (NSString*) description
-{
+- (NSString*) description {
     NSUInteger length = (_body.length ?: _mutableBody.length) ?: _encodedBody.minLength;
     NSMutableString *desc = [NSMutableString stringWithFormat: @"%@[#%u, %lu bytes",
                              self.class,(unsigned int)_number, (unsigned long)length];
-    if( _flags & kBLIP_Compressed ) {
-        if( _encodedBody && _encodedBody.minLength != length )
+    if (_flags & kBLIP_Compressed) {
+        if (_encodedBody && _encodedBody.minLength != length)
             [desc appendFormat: @" (%lu gzipped)", (unsigned long)_encodedBody.minLength];
         else
             [desc appendString: @", gzipped"];
     }
-    if( _flags & kBLIP_Urgent )
+    if (_flags & kBLIP_Urgent)
         [desc appendString: @", urgent"];
-    if( _flags & kBLIP_NoReply )
+    if (_flags & kBLIP_NoReply)
         [desc appendString: @", noreply"];
-    if( _flags & kBLIP_Meta )
+    if (_flags & kBLIP_Meta)
         [desc appendString: @", META"];
     if (_flags & kBLIP_MoreComing)
         [desc appendString: @", incomplete"];
@@ -103,8 +101,7 @@ NSError *BLIPMakeError( int errorCode, NSString *message, ... )
     return desc;
 }
 
-- (NSString*) descriptionWithProperties
-{
+- (NSString*) descriptionWithProperties {
     NSMutableString *desc = (NSMutableString*)self.description;
     [desc appendFormat: @" %@", self.properties];
     return desc;
@@ -120,10 +117,9 @@ NSError *BLIPMakeError( int errorCode, NSString *message, ... )
             representedObject=_representedObject;
 
 
-- (void) _setFlag: (BLIPMessageFlags)flag value: (BOOL)value
-{
+- (void) _setFlag: (BLIPMessageFlags)flag value: (BOOL)value {
     Assert(_isMine && _isMutable);
-    if( value )
+    if (value)
         _flags |= flag;
     else
         _flags &= ~flag;
@@ -138,27 +134,24 @@ NSError *BLIPMakeError( int errorCode, NSString *message, ... )
 - (void) setUrgent: (BOOL)high              {[self _setFlag: kBLIP_Urgent value: high];}
 
 
-- (NSData*) body
-{
-    if( ! _body && _isMine )
+- (NSData*) body {
+    if (! _body && _isMine)
         return [_mutableBody copy];
     else
         return _body;
 }
 
-- (void) setBody: (NSData*)body
-{
+- (void) setBody: (NSData*)body {
     Assert(_isMine && _isMutable);
-    if( _mutableBody )
+    if (_mutableBody)
         [_mutableBody setData: body];
     else
         _mutableBody = [body mutableCopy];
 }
 
-- (void) _addToBody: (NSData*)data
-{
-    if( data.length ) {
-        if( _mutableBody )
+- (void) _addToBody: (NSData*)data {
+    if (data.length) {
+        if (_mutableBody)
             [_mutableBody appendData: data];
         else
             _mutableBody = [data mutableCopy];
@@ -166,8 +159,7 @@ NSError *BLIPMakeError( int errorCode, NSString *message, ... )
     }
 }
 
-- (void) addToBody: (NSData*)data
-{
+- (void) addToBody: (NSData*)data {
     Assert(_isMine && _isMutable);
     [self _addToBody: data];
 }
@@ -179,17 +171,15 @@ NSError *BLIPMakeError( int errorCode, NSString *message, ... )
 }
 
 
-- (NSString*) bodyString
-{
+- (NSString*) bodyString {
     NSData *body = self.body;
-    if( body )
+    if (body)
         return [[NSString alloc] initWithData: body encoding: NSUTF8StringEncoding];
     else
         return nil;
 }
 
-- (void) setBodyString: (NSString*)string
-{
+- (void) setBodyString: (NSString*)string {
     self.body = [string dataUsingEncoding: NSUTF8StringEncoding];
     self.contentType = @"text/plain; charset=UTF-8";
 }
@@ -219,24 +209,20 @@ NSError *BLIPMakeError( int errorCode, NSString *message, ... )
 }
 
 
-- (NSDictionary*) properties
-{
+- (NSDictionary*) properties {
     return _properties;
 }
 
-- (NSMutableDictionary*) mutableProperties
-{
+- (NSMutableDictionary*) mutableProperties {
     Assert(_isMine && _isMutable);
     return (NSMutableDictionary*)_properties;
 }
 
-- (NSString*) objectForKeyedSubscript: (NSString*)key
-{
+- (NSString*) objectForKeyedSubscript: (NSString*)key {
     return _properties[key];
 }
 
-- (void) setObject: (NSString*)value forKeyedSubscript:(NSString*)key
-{
+- (void) setObject: (NSString*)value forKeyedSubscript:(NSString*)key {
     [self.mutableProperties setValue: value forKey: key];
 }
 
@@ -251,8 +237,7 @@ NSError *BLIPMakeError( int errorCode, NSString *message, ... )
 #pragma mark I/O:
 
 
-- (void) _encode
-{
+- (void) _encode {
     Assert(_isMine && _isMutable);
     _isMutable = NO;
 
@@ -264,8 +249,8 @@ NSError *BLIPMakeError( int errorCode, NSString *message, ... )
 
     NSData *body = _body ?: _mutableBody;
     NSUInteger length = body.length;
-    if( length > 0 ) {
-        if( self.compressed )
+    if (length > 0) {
+        if (self.compressed)
             body = [NSData gtm_dataByGzippingData: body compressionLevel: 5];
         [_encodedBody writeData: body];
     }
@@ -275,8 +260,7 @@ NSError *BLIPMakeError( int errorCode, NSString *message, ... )
 }
 
 
-- (void) _assignedNumber: (UInt32)number
-{
+- (void) _assignedNumber: (UInt32)number {
     Assert(_number==0,@"%@ has already been sent",self);
     _number = number;
     _isMutable = NO;
@@ -289,7 +273,7 @@ NSError *BLIPMakeError( int errorCode, NSString *message, ... )
     Assert(_isMine);
     Assert(_encodedBody);
     *outMoreComing = NO;
-    if( _bytesWritten==0 )
+    if (_bytesWritten==0)
         LogTo(BLIP,@"Now sending %@",self);
     size_t headerSize = MYLengthOfVarUInt(_number) + MYLengthOfVarUInt(_flags);
 
@@ -325,8 +309,7 @@ NSError *BLIPMakeError( int errorCode, NSString *message, ... )
 
 
 // Parses the next incoming frame.
-- (BOOL) _receivedFrameWithFlags: (BLIPMessageFlags)flags body: (NSData*)frameBody
-{
+- (BOOL) _receivedFrameWithFlags: (BLIPMessageFlags)flags body: (NSData*)frameBody {
     Assert(!_isMine);
     Assert(_flags & kBLIP_MoreComing);
 
@@ -340,11 +323,11 @@ NSError *BLIPMakeError( int errorCode, NSString *message, ... )
     LogTo(BLIPVerbose,@"%@ rcvd bytes %lu-%lu, flags=%x",
           self, (unsigned long)_bytesReceived-frameBody.length, (unsigned long)_bytesReceived, flags);
     
-    if( ! _properties ) {
+    if (! _properties) {
         // Try to extract the properties:
         BOOL complete;
         _properties = BLIPReadPropertiesFromBuffer(_encodedBody, &complete);
-        if( _properties ) {
+        if (_properties) {
             self.propertiesAvailable = YES;
             [_connection _messageReceivedProperties: self];
         } else if (complete) {
@@ -358,17 +341,17 @@ NSError *BLIPMakeError( int errorCode, NSString *message, ... )
         onDataReceived(_encodedBody);
     }
 
-    if( ! (flags & kBLIP_MoreComing) ) {
+    if (! (flags & kBLIP_MoreComing)) {
         // After last frame, decode the data:
         _flags &= ~kBLIP_MoreComing;
-        if( ! _properties )
+        if (! _properties)
             return NO;
         _body = _encodedBody.flattened;
         _encodedBody = nil;
         NSUInteger encodedLength = _body.length;
-        if( self.compressed && encodedLength>0 ) {
+        if (self.compressed && encodedLength>0) {
             _body = [[NSData gtm_dataByInflatingData: _body] copy];
-            if( ! _body ) {
+            if (! _body) {
                 Warn(@"Failed to decompress %@", self);
                 return NO;
             }
@@ -388,9 +371,8 @@ NSError *BLIPMakeError( int errorCode, NSString *message, ... )
 }
 
 
-- (void) _connectionClosed
-{
-    if( _isMine ) {
+- (void) _connectionClosed {
+    if (_isMine) {
         _bytesWritten = 0;
         _flags |= kBLIP_MoreComing;
     }

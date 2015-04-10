@@ -58,11 +58,11 @@ typedef BLIPMessageFlags BLIPMessageType;
 
 
 @interface BLIPMessage ()
-- (id) _initWithConnection: (id<BLIPMessageSender>)connection
-                    isMine: (BOOL)isMine
-                     flags: (BLIPMessageFlags)flags
-                    number: (UInt32)msgNo
-                      body: (NSData*)body;
+- (instancetype) _initWithConnection: (id<BLIPMessageSender>)connection
+                              isMine: (BOOL)isMine
+                               flags: (BLIPMessageFlags)flags
+                              number: (UInt32)msgNo
+                                body: (NSData*)body;
 - (NSData*) nextWebSocketFrameWithMaxSize: (UInt16)maxSize moreComing: (BOOL*)outMoreComing;
 @property (readonly) NSInteger _bytesWritten;
 - (void) _assignedNumber: (UInt32)number;
@@ -72,15 +72,15 @@ typedef BLIPMessageFlags BLIPMessageType;
 
 
 @interface BLIPRequest ()
-- (id) _initWithConnection: (id<BLIPMessageSender>)connection
-                      body: (NSData*)body 
-                properties: (NSDictionary*)properties;
+- (instancetype) _initWithConnection: (id<BLIPMessageSender>)connection
+                                body: (NSData*)body
+                          properties: (NSDictionary*)properties;
 @end
 
 
 @interface BLIPResponse ()
-- (id) _initWithRequest: (BLIPRequest*)request;
+- (instancetype) _initWithRequest: (BLIPRequest*)request;
 #if DEBUG
-- (id) _initIncomingWithProperties: (NSDictionary*)properties body: (NSData*)body;
+- (instancetype) _initIncomingWithProperties: (NSDictionary*)properties body: (NSData*)body;
 #endif
 @end

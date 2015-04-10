@@ -28,26 +28,25 @@
 }
 
 
-- (id) _initWithConnection: (id<BLIPMessageSender>)connection
-                      body: (NSData*)body 
-                properties: (NSDictionary*)properties
+- (instancetype) _initWithConnection: (id<BLIPMessageSender>)connection
+                                body: (NSData*)body
+                          properties: (NSDictionary*)properties
 {
     self = [self _initWithConnection: connection
                               isMine: YES
                                flags: kBLIP_MSG
                               number: 0
                                 body: body];
-    if( self ) {
-        if( body )
+    if (self) {
+        if (body)
             self.body = body;
-        if( properties )
+        if (properties)
             _properties = [properties copy];
     }
     return self;
 }
 
-+ (BLIPRequest*) requestWithBody: (NSData*)body
-{
++ (BLIPRequest*) requestWithBody: (NSData*)body {
     return [[self alloc] _initWithConnection: nil body: body properties: nil];
 }
 
@@ -61,8 +60,7 @@
     return [[self alloc] _initWithConnection: nil body: body properties: properties];
 }
 
-- (id)mutableCopyWithZone:(NSZone *)zone
-{
+- (id)mutableCopyWithZone:(NSZone *)zone {
     Assert(self.complete);
     BLIPRequest *copy = [[self class] requestWithBody: self.body 
                                            properties: self.properties];
@@ -77,20 +75,18 @@
 - (void) setNoReply: (BOOL)noReply          {[self _setFlag: kBLIP_NoReply value: noReply];}
 - (id<BLIPMessageSender>) connection        {return _connection;}
 
-- (void) setConnection: (id<BLIPMessageSender>)conn
-{
+- (void) setConnection: (id<BLIPMessageSender>)conn {
     Assert(_isMine && !_sent,@"Connection can only be set before sending");
      _connection = conn;
 }
 
 
-- (BLIPResponse*) send
-{
+- (BLIPResponse*) send {
     Assert(_connection,@"%@ has no connection to send over",self);
     Assert(!_sent,@"%@ was already sent",self);
     [self _encode];
     BLIPResponse *response = self.response;
-    if( [_connection _sendRequest: self response: response] )
+    if ([_connection _sendRequest: self response: response])
         self.sent = YES;
     else
         response = nil;
@@ -98,36 +94,31 @@
 }
 
 
-- (BLIPResponse*) response
-{
-    if( ! _response && ! self.noReply )
+- (BLIPResponse*) response {
+    if (! _response && ! self.noReply)
         _response = [[BLIPResponse alloc] _initWithRequest: self];
     return _response;
 }
 
-- (void) deferResponse
-{
+- (void) deferResponse {
     // This will allocate _response, causing -repliedTo to become YES, so BLIPWebSocket won't
     // send an automatic empty response after the current request handler returns.
     LogTo(BLIP,@"Deferring response to %@",self);
     [self response];
 }
 
-- (BOOL) repliedTo
-{
+- (BOOL) repliedTo {
     return _response != nil;
 }
 
-- (void) respondWithData: (NSData*)data contentType: (NSString*)contentType
-{
+- (void) respondWithData: (NSData*)data contentType: (NSString*)contentType {
     BLIPResponse *response = self.response;
     response.body = data;
     response.contentType = contentType;
     [response send];
 }
 
-- (void) respondWithString: (NSString*)string
-{
+- (void) respondWithString: (NSString*)string {
     [self respondWithData: [string dataUsingEncoding: NSUTF8StringEncoding]
               contentType: @"text/plain; charset=UTF-8"];
 }
@@ -138,19 +129,16 @@
     [response send];
 }
 
-- (void) respondWithError: (NSError*)error
-{
+- (void) respondWithError: (NSError*)error {
     self.response.error = error; 
     [self.response send];
 }
 
-- (void) respondWithErrorCode: (int)errorCode message: (NSString*)errorMessage
-{
+- (void) respondWithErrorCode: (int)errorCode message: (NSString*)errorMessage {
     [self respondWithError: BLIPMakeError(errorCode, @"%@",errorMessage)];
 }
 
-- (void) respondWithException: (NSException*)exception
-{
+- (void) respondWithException: (NSException*)exception {
     [self respondWithError: BLIPMakeError(kBLIPError_HandlerFailed, @"%@", exception.reason)];
 }
 

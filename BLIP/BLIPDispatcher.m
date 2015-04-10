@@ -27,8 +27,7 @@
 }
 
 
-- (instancetype) init
-{
+- (instancetype) init {
     self = [super init];
     if (self != nil) {
         _targets = [[NSMutableArray alloc] init];
@@ -49,8 +48,7 @@
 }
 
 
-- (void) removeRule: (id)rule
-{
+- (void) removeRule: (id)rule {
     NSUInteger ruleID = [$cast(NSNumber, rule) unsignedIntegerValue];
     _targets[ruleID] = [NSNull null];
     _predicates[ruleID] = [NSNull null];
@@ -68,11 +66,10 @@
 }
 
 
-- (BOOL) dispatchMessage: (BLIPMessage*)message
-{
+- (BOOL) dispatchMessage: (BLIPMessage*)message {
     NSDictionary *properties = message.properties;
     NSUInteger n = _predicates.count;
-    for( NSUInteger i=0; i<n; i++ ) {
+    for (NSUInteger i=0; i<n; i++) {
         id p = _predicates[i];
         if([$castIf(NSPredicate,p) evaluateWithObject: properties]) {
             BLIPDispatchBlock target = _targets[i];
@@ -84,8 +81,7 @@
 }
 
 
-- (BLIPDispatchBlock) asDispatchBlock
-{
+- (BLIPDispatchBlock) asDispatchBlock {
     return ^(BLIPMessage* msg) {
         [self dispatchMessage: msg];
     };

@@ -26,8 +26,7 @@
     void (^_onComplete)();
 }
 
-- (id) _initWithRequest: (BLIPRequest*)request
-{
+- (instancetype) _initWithRequest: (BLIPRequest*)request {
     Assert(request);
     self = [super _initWithConnection: request.connection
                                isMine: !request.isMine
@@ -35,7 +34,7 @@
                                number: request.number
                                  body: nil];
     if (self != nil) {
-        if( _isMine && request.urgent )
+        if (_isMine && request.urgent)
             _flags |= kBLIP_Urgent;
     }
     return self;
@@ -44,7 +43,7 @@
 
 #if DEBUG
 // For testing only
-- (id) _initIncomingWithProperties: (NSDictionary*)properties body: (NSData*)body {
+- (instancetype) _initIncomingWithProperties: (NSDictionary*)properties body: (NSData*)body {
     self = [self _initWithConnection: nil
                               isMine: NO
                                flags: kBLIP_MSG
@@ -60,17 +59,16 @@
 #endif
 
 
-- (NSError*) error
-{
-    if( (_flags & kBLIP_TypeMask) != kBLIP_ERR )
+- (NSError*) error {
+    if ((_flags & kBLIP_TypeMask) != kBLIP_ERR)
         return nil;
     
     NSMutableDictionary *userInfo = [_properties mutableCopy];
     NSString *domain = userInfo[@"Error-Domain"];
     int code = [userInfo[@"Error-Code"] intValue];
-    if( domain==nil || code==0 ) {
+    if (domain==nil || code==0) {
         domain = BLIPErrorDomain;
-        if( code==0 )
+        if (code==0)
             code = kBLIPError_Unspecified;
     }
     [userInfo removeObjectForKey: @"Error-Domain"];
@@ -78,10 +76,9 @@
     return [NSError errorWithDomain: domain code: code userInfo: userInfo];
 }
 
-- (void) _setError: (NSError*)error
-{
+- (void) _setError: (NSError*)error {
     _flags &= ~kBLIP_TypeMask;
-    if( error ) {
+    if (error) {
         // Setting this stuff is a PITA because this object might be technically immutable,
         // in which case the standard setters would barf if I called them.
         _flags |= kBLIP_ERR;
@@ -89,12 +86,12 @@
         _mutableBody = nil;
         
         NSMutableDictionary *errorProps = [self.properties mutableCopy];
-        if( ! errorProps )
+        if (! errorProps)
             errorProps = [[NSMutableDictionary alloc] init];
         NSDictionary *userInfo = error.userInfo;
-        for( NSString *key in userInfo ) {
+        for (NSString *key in userInfo) {
             id value = $castIf(NSString,userInfo[key]);
-            if( value )
+            if (value)
                 errorProps[key] = value;
         }
         errorProps[@"Error-Domain"] = error.domain;
@@ -107,15 +104,13 @@
     }
 }
 
-- (void) setError: (NSError*)error
-{
+- (void) setError: (NSError*)error {
     Assert(_isMine && _isMutable);
     [self _setError: error];
 }
 
 
-- (BOOL) send
-{
+- (BOOL) send {
     Assert(_connection,@"%@ has no connection to send over",self);
     Assert(!_sent,@"%@ was already sent",self);
     [self _encode];
@@ -128,10 +123,9 @@
 @synthesize onComplete=_onComplete;
 
 
-- (void) setComplete: (BOOL)complete
-{
+- (void) setComplete: (BOOL)complete {
     [super setComplete: complete];
-    if( complete && _onComplete ) {
+    if (complete && _onComplete) {
         @try{
             _onComplete();
         }catchAndReport(@"BLIPRequest onComplete block");
@@ -140,10 +134,9 @@
 }
 
 
-- (void) _connectionClosed
-{
+- (void) _connectionClosed {
     [super _connectionClosed];
-    if( !_isMine && !_complete ) {
+    if (!_isMine && !_complete) {
         NSError *error = _connection.error;
         if (!error)
             error = BLIPMakeError(kBLIPError_Disconnected,
