@@ -75,7 +75,7 @@ NSDictionary* BLIPParseProperties(MYSlice *data, BOOL* complete) {
         MYSliceMoveStart(data, 1);
         return @{};
     }
-    MYSlice buf = MYMakeSlice(slice.bytes, length);
+    MYSlice buf = MYMakeSlice(slice.bytes, (size_t)length);
     if (((const char*)slice.bytes)[buf.length - 1] != '\0')
         return nil;     // checking for nul at end makes it safe to use strlen in readCString
     NSMutableDictionary* result = [NSMutableDictionary new];

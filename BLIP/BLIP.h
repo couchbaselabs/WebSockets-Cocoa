@@ -8,5 +8,3 @@
 #import "BLIPConnection.h"
 #import "BLIPRequest.h"
 #import "BLIPResponse.h"
-
-#import "BLIPWebSocketConnection.h"

@@ -49,12 +49,12 @@
     [_openSockets addObject: b];    //FIX: How to remove it since I'm not the delegate when it closes??
     LogTo(BLIP, @"Listener got connection: %@", b);
     dispatch_async(_delegateQueue, ^{
-        [self blipWebSocketDidOpen: b];
+        [self blipConnectionDidOpen: b];
     });
 }
 
 
-- (void)blipWebSocketDidOpen:(BLIPConnection*)b {
+- (void)blipConnectionDidOpen:(BLIPConnection*)b {
     [b setDelegate: _blipDelegate queue: _delegateQueue];
 }
 

@@ -15,6 +15,6 @@
                      delegate: (id<BLIPConnectionDelegate>)delegate
                         queue: (dispatch_queue_t)queue;
 
-- (void)blipWebSocketDidOpen:(BLIPConnection*)webSocket;
+- (void) blipConnectionDidOpen:(BLIPConnection *)connection;
 
 @end

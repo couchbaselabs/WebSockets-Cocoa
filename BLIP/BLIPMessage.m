@@ -338,7 +338,7 @@ NSError *BLIPMakeError( int errorCode, NSString *message, ... ) {
 
     void (^onDataReceived)(id<MYReader>) = (_properties && !self.compressed) ? _onDataReceived : nil;
     if (onDataReceived) {
-        LogTo(BLIPVerbose, @"%@ -> calling onDataReceived(%lu bytes)", self, frameBody.length);
+        LogTo(BLIPVerbose, @"%@ -> calling onDataReceived(%lu bytes)", self, (unsigned long)frameBody.length);
         onDataReceived(_encodedBody);
     }
 
