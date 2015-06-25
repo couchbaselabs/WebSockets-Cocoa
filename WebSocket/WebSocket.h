@@ -136,9 +136,11 @@ extern NSString* const WebSocketErrorDomain;
         (As a convenience, any status code < 300 is mapped to 101. Also, if the client wants to return a boolean value, YES maps to 101 and NO maps to 403.)*/
 - (int) webSocket: (WebSocket*)ws shouldAccept: (NSURLRequest*)request;
 
-- (void) webSocket:(WebSocket *)ws
-         didSecureWithTrust: (SecTrustRef)trust
-                      atURL: (NSURL*)url;
+/** If SSL certificate verification is disabled (through the socket options), this delegate
+    method will be called to ask whether to trust the peer's certificate. The trust ref has
+    already been evaluated. Return YES to trust, NO to abort. */
+- (BOOL) webSocket:(WebSocket *)ws
+         shouldSecureWithTrust: (SecTrustRef)trust;
 
 /** Called when a WebSocket has opened its connection and is ready to send and receive messages. */
 - (void) webSocketDidOpen:(WebSocket *)ws;

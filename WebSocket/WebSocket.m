@@ -493,10 +493,13 @@ static NSData* kTerminator;
     SecTrustEvaluateAsync(trust, dispatch_get_main_queue(),
                           ^(SecTrustRef trustRef, SecTrustResultType result)
     {
-        // Deny the connection if the client cert is, like, totally bogus:
-        BOOL ok = result != kSecTrustResultProceed
-               && result != kSecTrustResultUnspecified
-               && result != kSecTrustResultRecoverableTrustFailure;  // this is only semi-bogus
+        BOOL ok;
+        id<WebSocketDelegate> delegate = _delegate;
+        if ([delegate respondsToSelector: @selector(webSocket:shouldSecureWithTrust:)]) {
+            ok = [delegate webSocket: self shouldSecureWithTrust: trust];
+        } else {
+            ok = (result == kSecTrustResultProceed || result == kSecTrustResultUnspecified);
+        }
         completionHandler(ok);
     });
 }

@@ -183,26 +183,6 @@
 }
 
 
-- (void)socketDidSecure:(GCDAsyncSocket *)sock {
-    id<WebSocketDelegate> delegate = _delegate;
-    if (![delegate respondsToSelector: @selector(webSocket:didSecureWithTrust:atURL:)])
-        return;
-    
-    __block SecTrustRef sslTrust = NULL;
-    [sock performBlock:^{
-#if TARGET_OS_IPHONE
-        sslTrust = (SecTrustRef) CFReadStreamCopyProperty(sock.readStream,
-                                                          kCFStreamPropertySSLPeerTrust);
-#else
-        SSLCopyPeerTrust(sock.sslContext, &sslTrust);
-#endif
-    }];
-
-    [delegate webSocket: self didSecureWithTrust: sslTrust atURL: _logic.URL];
-    CFRelease(sslTrust);
-}
-
-
 // called on the _websocketQueue
 - (void)socket:(GCDAsyncSocket *)sock didReadData:(NSData *)data withTag:(long)tag {
     if (sock == _httpSocket) {
