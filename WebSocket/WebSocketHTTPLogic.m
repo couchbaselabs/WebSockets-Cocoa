@@ -119,7 +119,7 @@
             Assert(CFHTTPMessageAddAuthentication(httpMsg, _responseMsg,
                                                   (__bridge CFStringRef)_credential.user,
                                                   (__bridge CFStringRef)password,
-                                                  kCFHTTPAuthenticationSchemeBasic,
+                                                  NULL,
                                                   _httpStatus == 407));
         } else {
             Warn(@"%@: Unable to get password of credential %@", self, _credential);
