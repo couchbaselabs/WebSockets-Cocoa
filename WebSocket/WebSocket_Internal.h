@@ -7,7 +7,7 @@
 
 #import "WebSocket.h"
 #import "GCDAsyncSocket.h"
-#import "Logging.h"
+#import "MYLogging.h"
 
 
 #define TIMEOUT_NONE          -1
@@ -22,6 +22,7 @@
 #define WS_OP_PING                 9
 #define WS_OP_PONG                 10
 
+UsingLogDomain(WS);
 #define HTTPLogTrace() LogTo(WS, @"TRACE: %s", __func__ )
 #define HTTPLogTraceWith(MSG, PARAM...) LogTo(WS, @"TRACE: %s " MSG, __func__, PARAM)
 
