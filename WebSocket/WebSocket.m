@@ -344,7 +344,7 @@ static NSData* kTerminator;
         UInt8 mask[4];
         if (_isClient) {
             header[1] |= 0x80;  // Sets the 'mask' flag
-            SecRandomCopyBytes(kSecRandomDefault, sizeof(mask), mask);
+            (void)SecRandomCopyBytes(kSecRandomDefault, sizeof(mask), mask);
             memcpy(&header[headerLen], mask, sizeof(mask));
             headerLen += sizeof(mask);
         }
