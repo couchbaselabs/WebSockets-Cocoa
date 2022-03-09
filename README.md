@@ -1,3 +1,5 @@
+⚠️ This repo is obsolete and not used.  The implementation of BLIP in Couchbase Lite for Cocoa is split between [Couchbase Lite iOS](https://github.com/couchbase/couchbase-lite-ios) for the transport and [BLIP](https://github.com/couchbase/couchbase-lite-core/tree/master/Networking/BLIP) for the protocol.
+
 This is an Objective-C implementation of the [WebSocket][WEBSOCKET] protocol, for iOS and Mac OS. It includes a protocol extension called BLIP that adds RPC-style functionality.
 
 It's built on top of Robbie Hanson's excellent [CocoaAsyncSocket][ASYNC] library. Its WebSocket class started out as a hack of a class from his [CocoaHTTPServer][HTTPSERVER], but has evolved from there.
